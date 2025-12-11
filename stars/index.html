@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2026 专属祝福</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Microsoft YaHei', sans-serif;
+            touch-action: none; 
+        }
+
+        #world {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background-image: radial-gradient(circle at 50% 50%, #030008 0%, #000000 90%);
+            overflow: hidden;
+        }
+
+        canvas { display: block; }
+        
+        /* === 启动页容器 === */
+        #start-container {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            text-align: center;
+            transition: opacity 0.8s ease;
+        }
+
+        /* 启动按钮 */
+        #overlay {
+            display: inline-block;
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 16px;
+            letter-spacing: 12px;
+            cursor: pointer;
+            background: rgba(20, 20, 30, 0.6); 
+            backdrop-filter: blur(12px);
+            padding: 20px 60px;
+            border-radius: 100px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 30px rgba(100, 150, 255, 0.15);
+            transition: transform 0.2s, box-shadow 0.3s;
+            font-weight: 300;
+            text-transform: uppercase;
+            white-space: nowrap;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #overlay:hover {
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 50px rgba(120, 180, 255, 0.3);
+            transform: scale(1.02);
+        }
+        
+        #overlay:active { transform: scale(0.95); }
+
+        /* 按钮光效 */
+        #overlay::before {
+            content: ''; position: absolute;
+            top: var(--y, 50%); left: var(--x, 50%);
+            transform: translate(-50%, -50%);
+            width: 150px; height: 150px;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+            opacity: 0; transition: opacity 0.3s;
+            pointer-events: none; mix-blend-mode: overlay; 
+        }
+        #overlay:hover::before { opacity: 1; }
+
+        /* === 启动页下方版权小字 (全版本显示) === */
+        #start-subtext {
+            margin-top: 15px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 1px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        #start-subtext:hover { color: rgba(255, 255, 255, 0.8); text-decoration: underline; }
+
+        /* === 右上角水印 (仅免费版显示) === */
+        #watermark {
+            position: absolute;
+            top: 20px; right: 25px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+            letter-spacing: 2px;
+            z-index: 5;
+            cursor: pointer;
+            font-weight: bold;
+            pointer-events: auto; /* 确保能点击 */
+            transition: all 0.3s;
+            display: none; /* JS控制显示 */
+        }
+        #watermark:hover {
+            color: rgba(255, 255, 255, 0.8);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        /* === 结束后的彩蛋广告 (仅免费版显示) === */
+        #end-ad {
+            position: absolute;
+            bottom: 40px; right: 30px; /* 放在右下角，不遮挡中心 */
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            padding: 10px 20px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 13px;
+            letter-spacing: 1px;
+            cursor: pointer;
+            z-index: 8;
+            opacity: 0; /* 初始隐藏 */
+            transform: translateY(20px);
+            transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+            display: none; /* JS控制是否存在 */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        #end-ad:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(20px) scale(1.05); /* 保持Y轴偏移 */
+            box-shadow: 0 5px 25px rgba(100, 200, 255, 0.3);
+        }
+        
+        /* 移动端适配：广告位置调整 */
+        @media (max-width: 768px) {
+            #end-ad {
+                bottom: 30px;
+                right: 50%;
+                transform: translateX(50%) translateY(20px); /* 居中 */
+                width: max-content;
+            }
+            #end-ad:hover {
+                transform: translateX(50%) translateY(20px) scale(1.05);
+            }
+            /* 激活状态的类，用于JS控制弹出 */
+            #end-ad.visible {
+                opacity: 1;
+                transform: translateX(50%) translateY(0) !important;
+            }
+        }
+        
+        /* PC端激活状态 */
+        @media (min-width: 769px) {
+            #end-ad.visible {
+                opacity: 1;
+                transform: translateY(0) !important;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="world">
+    <div id="start-container">
+        <div id="overlay" onmousemove="moveGlow(event)" ontouchmove="moveGlow(event)">开启 2026</div>
+        <div id="start-subtext" onclick="goBuy()">Powered by 七叶怀瑾 | 定制专属特效</div>
+    </div>
+
+    <div id="watermark" onclick="goBuy()">七叶怀瑾</div>
+
+    <div id="end-ad" onclick="goBuy()">
+        我也要送 TA 一片独特祝福的星空 <span style="margin-left:8px; opacity:0.7">👉 点击定制</span>
+    </div>
+
+    <canvas id="canvas"></canvas>
+</div>
+
+<script>
+    // === V33.0 商业闭环·无感植入版 ===
+    
+    // 配置跳转链接 (网站主页/上级目录)
+    const BUY_LINK = "../#buy"; // 根据你的目录结构修改，例如 "./" 或 "https://..."
+    const BRAND_NAME = "七叶怀瑾";
+
+    const SECRET_CONFIG = {
+        key: "MY_SECRET_KEY_2026", 
+        prefix: "VERIFY:"
+    };
+
+    let config = {
+        // === 默认免费版内容 (纯净祝福，无广告粒子) ===
+        textList: [
+            "3", "2", "1", 
+            "2026", 
+            "星河长明", 
+            "万事胜意", 
+            "所愿皆得"
+        ],
+        textDuration: [1500, 1500, 1500, 3000, 3000, 3000, 4000],
+        
+        totalParticles: 9000, 
+        nebulaRatio: 0.4,     
+        nebulaRadiusBase: 300, 
+        ringInnerBase: 380,    
+        ringOuterMult: 1.6,    
+        poseX: 0.4,    
+        poseZ: -0.15,  
+        perspective: 1000,
+        introDuration: 4000,   
+        startScale: 5.0,       
+        startTwist: 2.0,       
+        loopRotationSpeed: -0.001, 
+        trailAlpha: 0.12 
+    };
+
+    // 全局状态
+    let isPaidUser = false; // 是否付费版
+    let hasShownAd = false; // 是否已展示过结尾广告
+
+    function goBuy() {
+        window.location.href = BUY_LINK;
+    }
+
+    function moveGlow(e) {
+        const btn = e.currentTarget;
+        const rect = btn.getBoundingClientRect();
+        let clientX = e.clientX;
+        let clientY = e.clientY;
+        if(e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        }
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        btn.style.setProperty('--x', x + 'px');
+        btn.style.setProperty('--y', y + 'px');
+    }
+
+    // === 自动解密与权限判断 ===
+    function autoDecrypt() {
+        const params = new URLSearchParams(window.location.search);
+        const encryptedCode = params.get('code'); 
+        
+        if (encryptedCode) {
+            try {
+                const bytes = CryptoJS.AES.decrypt(encryptedCode, SECRET_CONFIG.key);
+                const decryptedStr = bytes.toString(CryptoJS.enc.Utf8);
+                if (decryptedStr.startsWith(SECRET_CONFIG.prefix)) {
+                    const content = decryptedStr.replace(SECRET_CONFIG.prefix, '');
+                    const customerList = content.split(/[,，]/).filter(t => t.trim() !== '');
+                    if (customerList.length > 0) {
+                        // === 付费版逻辑 ===
+                        isPaidUser = true;
+                        
+                        // 强制加上倒计时
+                        config.textList = ["3", "2", "1", ...customerList];
+                        config.textDuration = config.textList.map(text => {
+                            if (/^\d+$/.test(text) && text.length < 3) return 1500;
+                            return 3000;
+                        });
+                        console.log("VIP Mode Activated");
+                    }
+                }
+            } catch (e) { console.log("Decryption Failed, using Free Mode"); }
+        }
+    }
+    autoDecrypt();
+
+    // === UI 初始化逻辑 ===
+    function initUI() {
+        if (isPaidUser) {
+            // 付费版：移除水印，移除结尾广告
+            const wm = document.getElementById('watermark');
+            if(wm) wm.remove();
+            const endAd = document.getElementById('end-ad');
+            if(endAd) endAd.remove();
+        } else {
+            // 免费版：显示水印，准备结尾广告
+            document.getElementById('watermark').style.display = 'block';
+            document.getElementById('end-ad').style.display = 'block'; // 只是存在，opacity还是0
+        }
+    }
+    initUI();
+
+    const world = document.getElementById('world');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    let width, height;
+    let isMobile = false;
+    
+    const COS_POSE_X = Math.cos(config.poseX);
+    const SIN_POSE_X = Math.sin(config.poseX);
+    const COS_POSE_Z = Math.cos(config.poseZ);
+    const SIN_POSE_Z = Math.sin(config.poseZ);
+
+    let currentTextIndex = 0;
+    const MAX_TEXT_PARTICLES = 25000; 
+    let textParticlePool = []; 
+    let currentEffect = 'converge'; 
+
+    let galaxyParticles = []; 
+    let isRunning = false;
+    let startTime = 0; 
+
+    function easeOutCubic(x) { return 1 - Math.pow(1 - x, 3); }
+
+    function init() {
+        const screenW = window.innerWidth;
+        const screenH = window.innerHeight;
+
+        if (screenW < screenH) {
+            isMobile = true;
+            world.style.width = screenH + 'px';
+            world.style.height = screenW + 'px';
+            world.style.transform = 'rotate(90deg)';
+            world.style.transformOrigin = 'top left';
+            world.style.left = '100%'; 
+            world.style.top = '0';
+            width = screenH;
+            height = screenW;
+        } else {
+            isMobile = screenW < 1024;
+            world.style.width = '100vw';
+            world.style.height = '100vh';
+            world.style.transform = 'none';
+            world.style.left = '0';
+            width = screenW;
+            height = screenH;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const minDim = Math.min(width, height);
+        config.nebulaRadiusBase = minDim * 0.35; 
+        config.ringInnerBase = minDim * 0.45;
+        
+        config.totalParticles = isMobile ? 6000 : 9000;
+
+        createGalaxy();
+        
+        if (textParticlePool.length === 0) {
+            for (let i = 0; i < MAX_TEXT_PARTICLES; i++) {
+                textParticlePool.push(new TextParticle());
+            }
+        }
+    }
+
+    window.addEventListener('resize', () => {
+        if(!isRunning) init();
+    });
+
+    class GalaxyParticle {
+        constructor(type) { this.type = type; this.reset(); }
+        reset() {
+            const angle = Math.random() * Math.PI * 2;
+            if (this.type === 'nebula') {
+                const r = config.nebulaRadiusBase * Math.cbrt(Math.random()); 
+                const phi = Math.acos((Math.random() * 2) - 1);
+                this.targetX = r * Math.sin(phi) * Math.cos(angle);
+                this.targetY = r * Math.sin(phi) * Math.sin(angle);
+                this.targetZ = r * Math.cos(phi);
+                const distRatio = r / config.nebulaRadiusBase;
+                const hue = 280 - distRatio * 30; 
+                this.colorBase = `hsla(${hue}, 85%, 65%,`; 
+                const rimIntensity = Math.pow(distRatio, 4); 
+                this.maxAlpha = 0.1 + 0.8 * rimIntensity;
+                const sizeFactor = isMobile ? 0.5 : 0.8;
+                if (distRatio > 0.85) this.size = (Math.random() * 2.0 + 1.0) * sizeFactor; 
+                else this.size = (Math.random() * 1.2 + 0.3) * sizeFactor; 
+            } else {
+                const minR = config.ringInnerBase;
+                const maxR = Math.max(width, height) * config.ringOuterMult; 
+                const r = minR + (maxR - minR) * Math.pow(Math.random(), 1.5);
+                this.targetX = r * Math.cos(angle);
+                this.targetY = (Math.random() - 0.5) * (r * 0.05); 
+                this.targetZ = r * Math.sin(angle);
+                const rand = Math.random();
+                const sizeFactor = isMobile ? 0.5 : 0.8;
+                if (rand > 0.75) { 
+                    this.colorBase = `hsla(42, 100%, 75%,`; 
+                    this.size = (Math.random() * 2.0 + 0.8) * sizeFactor;
+                    this.maxAlpha = 1.0;
+                } else if (rand > 0.4) {
+                    this.colorBase = `hsla(210, 70%, 70%,`; 
+                    this.size = (Math.random() * 1.5 + 0.5) * sizeFactor;
+                    this.maxAlpha = 0.7;
+                } else {
+                    this.colorBase = `hsla(265, 40%, 50%,`; 
+                    this.size = (Math.random() * 1.2 + 0.4) * sizeFactor;
+                    this.maxAlpha = 0.5;
+                }
+            }
+            const rForSpeed = Math.sqrt(this.targetX**2 + this.targetZ**2);
+            this.speedOffset = 200 / (rForSpeed + 50); 
+            this.randomPhase = Math.random() * Math.PI * 2;
+        }
+        project(x, y, z) {
+            let y2 = y * COS_POSE_X - z * SIN_POSE_X;
+            let z2 = z * COS_POSE_X + y * SIN_POSE_X;
+            let x2 = x;
+            let x3 = x2 * COS_POSE_Z - y2 * SIN_POSE_Z;
+            let y3 = y2 * COS_POSE_Z + x2 * SIN_POSE_Z;
+            let z3 = z2;
+            const scale = config.perspective / (config.perspective + z3);
+            return { x: x3 * scale, y: y3 * scale, scale: scale };
+        }
+        updateIntro(progress, ctx, centerX, centerY) {
+            const eased = easeOutCubic(progress);
+            const scale = config.startScale - (config.startScale - 1) * eased;
+            const twistAngle = (1 - eased) * config.startTwist * Math.PI * 2;
+            const cosT = Math.cos(twistAngle);
+            const sinT = Math.sin(twistAngle);
+            const xRot = this.targetX * cosT - this.targetZ * sinT;
+            const zRot = this.targetZ * cosT + this.targetX * sinT;
+            const curX = xRot * scale;
+            const curY = this.targetY * scale;
+            const curZ = zRot * scale;
+            const p = this.project(curX, curY, curZ);
+            if (p.scale <= 0) return;
+            const screenX = centerX + p.x;
+            const screenY = centerY + p.y;
+            if (screenX < -20 || screenX > width + 20 || screenY < -20 || screenY > height + 20) return;
+            let fadeProgress = Math.pow(Math.max(0, (progress - 0.1) / 0.9), 2); 
+            let alpha = this.maxAlpha * fadeProgress;
+            if (alpha > 0.01) {
+                ctx.fillStyle = this.colorBase + alpha + ')';
+                ctx.beginPath();
+                const blur = 1 + (1 - eased) * 2;
+                ctx.arc(screenX, screenY, this.size * p.scale * blur, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        updateLoop(time, ctx, centerX, centerY) {
+            const rotAngle = time * config.loopRotationSpeed * this.speedOffset;
+            const cosRot = Math.cos(rotAngle);
+            const sinRot = Math.sin(rotAngle);
+            let x1 = this.targetX * cosRot - this.targetZ * sinRot;
+            let z1 = this.targetZ * cosRot + this.targetX * sinRot;
+            let y1 = this.targetY;
+            const p = this.project(x1, y1, z1);
+            if (p.scale <= 0) return;
+            const screenX = centerX + p.x;
+            const screenY = centerY + p.y;
+            if (screenX < -20 || screenX > width + 20 || screenY < -20 || screenY > height + 50) return;
+            const breath = 0.7 + 0.3 * Math.sin(time * 0.03 + this.randomPhase);
+            let alpha = this.maxAlpha;
+            let depthAlpha = (z1 + 2000) / 4000;
+            if (this.type === 'nebula') {
+                alpha *= (breath * 0.8 + 0.4); 
+                depthAlpha = depthAlpha * 0.8 + 0.3; 
+            } else {
+                alpha *= (0.85 + 0.15 * Math.sin(time * 0.1 + this.randomPhase));
+            }
+            let finalAlpha = alpha * depthAlpha;
+            if (finalAlpha > 0.01) {
+                ctx.fillStyle = this.colorBase + finalAlpha + ')';
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, this.size * p.scale, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    }
+
+    class TextParticle {
+        constructor() {
+            this.active = false;
+            this.x = 0; this.y = 0;
+            this.targetX = 0; this.targetY = 0;
+            this.vx = 0; this.vy = 0;
+            this.angle = 0; this.radius = 0;
+            this.color = '';
+            this.size = 2.0;
+        }
+        activate(targetX, targetY, effectType, size = 2.0) {
+            this.active = true;
+            this.targetX = targetX;
+            this.targetY = targetY;
+            const mobileScale = isMobile ? 0.6 : 1.0; 
+            this.color = `rgba(220, 240, 255, ${0.7 + Math.random() * 0.3})`;
+            this.size = 2.0 * mobileScale;
+            
+            if (this.x === 0 && this.y === 0) {
+                 this.x = Math.random() * width;
+                 this.y = Math.random() * height;
+            }
+            switch (effectType) {
+                case 'explode': 
+                    const dx = this.x - width/2;
+                    const dy = this.y - height/2;
+                    this.vx = dx * 0.05 + (Math.random() - 0.5) * 10;
+                    this.vy = dy * 0.05 + (Math.random() - 0.5) * 10;
+                    break;
+                case 'spiral': 
+                    this.angle = Math.random() * Math.PI * 2;
+                    this.radius = 300 + Math.random() * 200; 
+                    this.x = targetX + Math.cos(this.angle) * this.radius;
+                    this.y = targetY + Math.sin(this.angle) * this.radius;
+                    break;
+                case 'converge': default: break;
+            }
+        }
+        update(effectType) {
+            if (!this.active) return;
+            switch (effectType) {
+                case 'explode':
+                    this.x += this.vx; this.y += this.vy;
+                    this.vx *= 0.9; this.vy *= 0.9;
+                    this.x += (this.targetX - this.x) * 0.08;
+                    this.y += (this.targetY - this.y) * 0.08;
+                    break;
+                case 'spiral':
+                    this.x += (this.targetX - this.x) * 0.08;
+                    this.y += (this.targetY - this.y) * 0.08;
+                    break;
+                case 'converge': default:
+                    this.x += (this.targetX - this.x) * 0.08;
+                    this.y += (this.targetY - this.y) * 0.08;
+                    break;
+            }
+        }
+        draw(ctx) {
+            if (!this.active) return;
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    function createGalaxy() {
+        galaxyParticles = [];
+        const nebulaCount = Math.floor(config.totalParticles * config.nebulaRatio);
+        const ringCount = config.totalParticles - nebulaCount;
+        for (let i = 0; i < nebulaCount; i++) galaxyParticles.push(new GalaxyParticle('nebula'));
+        for (let i = 0; i < ringCount; i++) galaxyParticles.push(new GalaxyParticle('ring'));
+    }
+
+    function getTextCoordinates(text) {
+        if (text === "QR_CODE") {
+            return getQRCoordinates(AD_CONFIG.qrContent);
+        }
+
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+        
+        let fontSize = Math.min(width, height) * 0.18; 
+        if (isMobile) fontSize *= 1.4; // 保持手机端大字体
+
+        if (text.length > 8) fontSize *= 0.5;
+        else if (text.length > 4) fontSize *= 0.6;
+        if (isMobile && text.length > 5) fontSize *= 0.8;
+
+        tempCtx.font = `bold ${fontSize}px "Microsoft YaHei", sans-serif`;
+        tempCtx.fillStyle = 'white';
+        tempCtx.textAlign = 'center';
+        tempCtx.textBaseline = 'middle';
+        tempCtx.fillText(text, width / 2, height / 2);
+        
+        const imageData = tempCtx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+        const coords = [];
+        
+        // === 保持 gap 不变 ===
+        // 手机端 gap 依然是 2，保证极高的物理分辨率
+        const gap = isMobile ? 2 : 4; 
+        
+        for (let y = 0; y < height; y += gap) {
+            for (let x = 0; x < width; x += gap) {
+                if (data[(y * width + x) * 4 + 3] > 180) {
+                    // === 【修改点】随机采样 ===
+                    // 如果是手机端，随机丢弃 40% 的粒子，只保留 60%
+                    // 这样既维持了 gap=2 的精细骨架，又降低了密度
+                    if (isMobile && Math.random() > 0.3) continue;
+
+                    coords.push({ x: x, y: y });
+                }
+            }
+        }
+        return coords;
+    }
+
+    function switchText(index) {
+        // === 循环逻辑 ===
+        if (index >= config.textList.length) {
+            // 跳过前3个倒计时 (0,1,2)，从索引3开始循环
+            currentTextIndex = 3; 
+            index = 3;
+            
+            // 免费版：只有在一轮播放结束(开始循环)时，才显示广告
+            if (!isPaidUser && !hasShownAd) {
+                const ad = document.getElementById('end-ad');
+                if(ad) {
+                    ad.style.display = 'block'; // 确保display block
+                    setTimeout(() => ad.classList.add('visible'), 100); // 触发CSS transition
+                }
+                hasShownAd = true;
+            }
+        }
+        
+        const text = config.textList[index];
+        const coords = getTextCoordinates(text);
+        
+        const effects = ['converge', 'spiral', 'explode'];
+        
+        if (index < 3 && /^\d+$/.test(text)) {
+             currentEffect = Math.random() > 0.5 ? 'explode' : 'converge';
+        } else {
+            currentEffect = effects[Math.floor(Math.random() * effects.length)];
+        }
+
+        textParticlePool.forEach(p => p.active = false);
+        for (let i = 0; i < coords.length && i < textParticlePool.length; i++) {
+            textParticlePool[i].activate(coords[i].x, coords[i].y, currentEffect);
+        }
+
+        setTimeout(() => {
+            currentTextIndex++;
+            switchText(currentTextIndex);
+        }, config.textDuration[index] || 2500);
+    }
+
+    function animate(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const centerX = width / 2;
+        const centerY = height / 2;
+
+        ctx.fillStyle = `rgba(0, 0, 5, ${config.trailAlpha})`; 
+        ctx.fillRect(0, 0, width, height);
+        
+        ctx.globalCompositeOperation = 'lighter';
+
+        if (elapsed < config.introDuration) {
+            const progress = elapsed / config.introDuration;
+            galaxyParticles.forEach(p => p.updateIntro(progress, ctx, centerX, centerY));
+        } else {
+            const loopTime = elapsed - config.introDuration;
+            galaxyParticles.forEach(p => p.updateLoop(loopTime, ctx, centerX, centerY));
+        }
+
+        ctx.globalCompositeOperation = 'source-over';
+        textParticlePool.forEach(p => {
+            p.update(currentEffect);
+            p.draw(ctx);
+        });
+
+        requestAnimationFrame(animate);
+    }
+
+    init();
+
+    const startContainer = document.getElementById('start-container');
+    const overlay = document.getElementById('overlay');
+    
+    // 点击开始按钮逻辑
+    overlay.addEventListener('click', () => {
+        // 淡出整个启动容器
+        startContainer.style.opacity = '0';
+        setTimeout(() => startContainer.style.display = 'none', 800);
+        
+        if (!isRunning) {
+            isRunning = true;
+            init(); 
+            switchText(0); 
+            requestAnimationFrame(animate);
+        }
+    });
+
+</script>
+</body>
+</html>
