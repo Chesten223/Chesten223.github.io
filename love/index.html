@@ -9,6 +9,7 @@
     
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
     <script type="importmap">
@@ -37,33 +38,40 @@
             overflow: hidden;
         }
 
-        /* 3D Canvas */
-        #three-canvas { 
-            display: block; 
-            width: 100%; 
-            height: 100%; 
-        }
+        #three-canvas { display: block; width: 100%; height: 100%; }
         
-        /* === 摄像头预览 (隐藏但保留占位) === */
+        /* === 调试预览窗口 === */
         #video-container {
             position: absolute;
             bottom: 20px; left: 20px;
-            width: 160px; height: 120px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            /* 手机上稍微大一点，方便看红线 */
+            width: 140px; height: 186px; 
+            border: 2px solid rgba(255, 105, 180, 0.5); /* 粉色边框提示这是调试区 */
             border-radius: 8px;
             overflow: hidden;
             z-index: 10;
-            opacity: 0; /* 初始隐藏，点击开始后显示 */
-            transform: scaleX(-1);
+            opacity: 0; 
+            transform: scaleX(-1); /* 镜像翻转，符合照镜子习惯 */
             pointer-events: none;
             transition: opacity 1s;
+            background: #000;
         }
-        #input_video { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* 视频层 */
+        #input_video { 
+            position: absolute; top:0; left:0; width: 100%; height: 100%; 
+            object-fit: cover; 
+        }
+        
+        /* 绘制骨骼层 (天眼) */
+        #debug_canvas {
+            position: absolute; top:0; left:0; width: 100%; height: 100%; 
+            object-fit: cover;
+        }
 
-        /* === 3D 交互提示 UI === */
         #ui-container {
             position: absolute;
-            top: 75%; left: 0;
+            top: 70%; left: 0; 
             width: 100%;
             transform: translateY(-50%);
             text-align: center;
@@ -72,22 +80,22 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            opacity: 0; /* 初始隐藏 */
+            opacity: 0;
             transition: opacity 1s;
         }
 
         #ui-hint {
             color: rgba(255, 180, 200, 0.9);
-            font-size: 18px;
-            letter-spacing: 4px;
+            font-size: 16px; 
+            letter-spacing: 2px;
             text-shadow: 0 0 15px rgba(255, 50, 150, 0.6);
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             font-weight: 400;
             text-transform: uppercase;
         }
 
         #progress-bar-bg {
-            width: 180px; height: 3px;
+            width: 150px; height: 3px;
             background: rgba(255,255,255,0.15);
             border-radius: 1.5px;
             overflow: hidden;
@@ -102,83 +110,73 @@
             transition: width 0.1s linear;
         }
 
-        /* === 启动页容器 === */
         #start-container {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             z-index: 20;
             text-align: center;
+            width: 100%; 
             transition: opacity 0.8s ease;
         }
 
-        /* === 【关键修改】少女粉按钮样式 === */
+        /* 少女粉按钮 */
         #overlay {
             display: inline-block;
-            color: rgba(255, 240, 245, 1); /* 文字：浅粉白 */
+            color: rgba(255, 240, 245, 1);
             font-size: 16px;
-            letter-spacing: 4px; /* 字间距稍微收一点，因为加了emoji */
+            letter-spacing: 4px;
             cursor: pointer;
-            
-            /* 背景：带一点透明度的深粉色 */
             background: rgba(80, 20, 40, 0.6); 
             backdrop-filter: blur(12px);
-            padding: 20px 50px;
+            padding: 18px 40px; 
             border-radius: 100px;
-            
-            /* 边框：粉色 */
             border: 1px solid rgba(255, 105, 180, 0.4);
-            /* 阴影：粉色光晕 */
             box-shadow: 0 0 30px rgba(255, 20, 147, 0.3);
-            
             transition: transform 0.2s, box-shadow 0.3s, background 0.3s;
             font-weight: 400;
             text-transform: uppercase;
             white-space: nowrap;
             position: relative;
             overflow: hidden;
+            -webkit-tap-highlight-color: transparent; 
         }
 
-        /* 鼠标移上去的效果：变得更粉更亮 */
         #overlay:hover {
             background: rgba(100, 20, 50, 0.7);
             border-color: rgba(255, 182, 193, 0.8);
-            /* 强烈的粉色发光 */
             box-shadow: 0 0 50px rgba(255, 105, 180, 0.6); 
             transform: scale(1.02);
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
         }
-        
-        /* 按钮内部的流光特效：也是粉色的 */
+
+        #overlay:active { transform: scale(0.95); }
+
         #overlay::before {
             content: ''; position: absolute;
             top: var(--y, 50%); left: var(--x, 50%);
             transform: translate(-50%, -50%);
             width: 150px; height: 150px;
-            /* 径向渐变：粉色 -> 透明 */
             background: radial-gradient(circle, rgba(255, 192, 203, 0.4) 0%, transparent 70%);
             opacity: 0; transition: opacity 0.3s;
             pointer-events: none; mix-blend-mode: overlay; 
         }
         #overlay:hover::before { opacity: 1; }
-        
-        /* 版权小字 */
+
         #start-subtext {
             margin-top: 20px;
             font-size: 11px;
-            color: rgba(255, 182, 193, 0.5); /* 淡淡的粉色 */
+            color: rgba(255, 182, 193, 0.5);
             letter-spacing: 1px;
             cursor: pointer;
             text-decoration: none;
             transition: color 0.3s;
         }
-        #start-subtext:hover { color: rgba(255, 192, 203, 0.9); text-decoration: underline; }
 
-        /* === 右上角水印 === */
         #watermark {
             position: absolute;
-            top: 20px; right: 25px;
-            font-size: 12px;
+            top: 20px; right: 20px;
+            font-size: 10px; 
             color: rgba(255, 255, 255, 0.3);
             letter-spacing: 2px;
             z-index: 5;
@@ -188,42 +186,49 @@
             transition: all 0.3s;
             display: none;
         }
-        #watermark:hover { color: rgba(255, 255, 255, 0.8); text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
 
-        /* === 底部广告 === */
         #end-ad {
             position: absolute;
-            bottom: 40px; right: 30px; 
+            bottom: 30px; 
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            width: 80%; 
+            max-width: 300px;
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(5px);
-            padding: 10px 20px;
+            padding: 10px 0;
+            text-align: center;
             border-radius: 30px;
             border: 1px solid rgba(255, 255, 255, 0.15);
             color: rgba(255, 255, 255, 0.9);
-            font-size: 13px;
+            font-size: 12px;
             letter-spacing: 1px;
             cursor: pointer;
             z-index: 8;
             opacity: 0;
-            transform: translateY(20px);
             transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
             display: none;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
-        #end-ad.visible { opacity: 1; transform: translateY(0); }
+        #end-ad.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
         
         #loading-text {
             display: none;
             margin-top: 15px; 
-            color: rgba(255, 192, 203, 0.6); /* 粉色加载文字 */
+            color: rgba(255, 192, 203, 0.6);
             font-size: 12px; letter-spacing: 2px;
         }
 
-        @media (max-width: 768px) {
-            #end-ad { bottom: 30px; right: 50%; transform: translateX(50%) translateY(20px); width: max-content; }
-            #end-ad.visible { transform: translateX(50%) translateY(0); }
+        #debug-info {
+            position: absolute;
+            top: 10px; left: 10px;
+            color: lime; font-size: 10px;
+            z-index: 100;
+            pointer-events: none;
+            background: rgba(0,0,0,0.5);
+            padding: 2px;
+            display: none; /* 调试完可关闭 */
         }
-
     </style>
 </head>
 <body>
@@ -231,26 +236,29 @@
 <div id="world">
     <div id="start-container">
         <div id="overlay" onclick="startExperience()" onmousemove="moveGlow(event)" ontouchmove="moveGlow(event)">✨ 开启 2026 魔法 ✨</div>
-        <div id="loading-text">正在准备魔法...</div>
-        <div id="start-subtext" onclick="goBuy()">Powered by 七叶怀瑾 | 定制专属特效</div>
+        <div id="loading-text">正在唤醒 AI (手机请允许摄像头)...</div>
+        <div id="start-subtext" onclick="goBuy()">Powered by 七叶怀瑾</div>
     </div>
 
     <div id="ui-container">
-        <div id="ui-hint">Wave Hands to Summon</div>
+        <div id="ui-hint">请竖屏并将手举高</div>
         <div id="progress-bar-bg"><div id="progress-bar"></div></div>
     </div>
 
     <div id="video-container">
-        <video id="input_video"></video>
+        <video id="input_video" playsinline webkit-playsinline></video>
+        <canvas id="debug_canvas"></canvas>
     </div>
 
     <div id="watermark" onclick="goBuy()">七叶怀瑾</div>
     <div id="end-ad" onclick="goBuy()">
-        我也要送 TA 一片独特祝福的心话 <span style="margin-left:8px; opacity:0.7">👉 点击定制</span>
+        送 TA 一句专属情话 <span style="margin-left:5px; opacity:0.7">👉 定制表白文字</span>
     </div>
 
     <canvas id="three-canvas"></canvas>
     <canvas id="textCanvas" width="512" height="256" style="display:none;"></canvas>
+    
+    <div id="debug-info">Init...</div>
 </div>
 
 <script type="module">
@@ -259,40 +267,38 @@
     import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
     import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 
+    // === 检测是否为手机 ===
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const debugInfo = document.getElementById('debug-info');
+    
     // === 配置区域 ===
     const CONFIG = {
-        // 1. 颜色与视觉
         handCloudColor: 0xff66aa,  
         heartColorA: 0xff0033,     
         heartColorB: 0xff99cc,     
 
-        bloomStrength: 1.4,        
+        bloomStrength: isMobile ? 1.0 : 1.4,        
         bloomRadius: 0.4,          
         
-        // 2. 粒子
-        handParticleCount: 1500,   
-        handParticleSize: 2.5,     
+        handParticleCount: isMobile ? 800 : 1500,   
+        handParticleSize: isMobile ? 3.5 : 2.5,   
 
-        // 3. 交互灵敏度
-        connectThreshold: 5.0,    
-        gestureHoldTime: 100,      
+        connectThreshold: 4.0,    
+        gestureHoldTime: 80, 
         
-        // 4. 动画流程
-        morphParticleCount: 25000, 
+        morphParticleCount: isMobile ? 12000 : 25000, 
         textPhrases: ["I LOVE U", "FOREVER"], 
         textDisplayTime: 4.0,      
         beatsToPerform: 3,         
 
-        // 5. 物理
         handAttractStrength: 0.5,  
         handSwirlSpeed: 0.6,       
-        handSpreadCharging: 7.0,   
-        handSpreadNormal: 17.0,    
+        handSpreadCharging: isMobile ? 5.0 : 7.0,   
+        handSpreadNormal: isMobile ? 12.0 : 17.0,    
         
-        cameraZ: 70
+        cameraZ: isMobile ? 90 : 70 
     };
 
-    // === 全局变量 ===
     const BUY_LINK = "../#buy"; 
     const API_DECODE_URL = "https://vimalin.xyz:8443/api/decode"; 
     let isPaidUser = false;
@@ -309,10 +315,9 @@
     let gestureCenter = new THREE.Vector3();
     let isRunning = false; 
 
-    // === 暴露给全局的函数 ===
+    // === 全局函数 ===
     window.goBuy = function() { window.location.href = BUY_LINK; };
     
-    // 【新增】移动光效函数
     window.moveGlow = function(e) {
         const btn = e.currentTarget;
         const rect = btn.getBoundingClientRect();
@@ -336,13 +341,21 @@
         loadingText.style.display = 'block';
 
         initThreeJS();
-        await initMediaPipe();
+        try {
+            loadingText.innerText = "正在加载 AI 模型...";
+            await initMediaPipe();
+        } catch (error) {
+            console.error(error);
+            loadingText.innerText = "摄像头启动失败，请检查 HTTPS";
+            return;
+        }
 
         const startContainer = document.getElementById('start-container');
         startContainer.style.opacity = '0';
         setTimeout(() => startContainer.style.display = 'none', 800);
 
-        document.getElementById('video-container').style.opacity = '0.3';
+        // 显示左下角的调试窗口
+        document.getElementById('video-container').style.opacity = '0.6';
         document.getElementById('ui-container').style.opacity = '1';
         
         if (!isPaidUser) {
@@ -357,11 +370,9 @@
         animate();
     };
 
-    // === 后端解密与VIP逻辑 ===
     async function fetchDecryptedPayload() {
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
-        
         if (code) {
             try {
                 const response = await fetch(API_DECODE_URL, {
@@ -370,17 +381,11 @@
                     body: JSON.stringify({ code: code })
                 });
                 const result = await response.json();
-                
-                if (result.success && result.data) {
-                    const payload = result.data;
-                    console.log("VIP Verified:", payload);
-                    
-                    if (payload.wish) { 
-                        isPaidUser = true; 
-                        const lines = payload.wish.split('\n').filter(line => line.trim() !== '');
-                        CONFIG.textPhrases = lines;
-                        initUI(); 
-                    }
+                if (result.success && result.data && result.data.wish) {
+                    isPaidUser = true; 
+                    const lines = result.data.wish.split('\n').filter(line => line.trim() !== '');
+                    CONFIG.textPhrases = lines;
+                    initUI(); 
                 }
             } catch (e) { console.error("API Error", e); }
         }
@@ -399,13 +404,11 @@
         }
     }
 
-    // === Three.js 初始化 ===
     function initThreeJS() {
         const canvas = document.getElementById('three-canvas');
-
-        renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
+        renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setPixelRatio(isMobile ? 1 : Math.min(window.devicePixelRatio, 2));
 
         scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x050008, 0.015);
@@ -437,30 +440,62 @@
         composer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    // === MediaPipe 初始化 ===
+    // === 【核心修改】MediaPipe 初始化 ===
     async function initMediaPipe() {
         const videoElement = document.getElementById('input_video');
+        const debugCanvas = document.getElementById('debug_canvas');
+        const debugCtx = debugCanvas.getContext('2d');
+
         const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
         
         hands.setOptions({
             maxNumHands: 2, 
-            modelComplexity: 1, 
-            minDetectionConfidence: 0.6, 
-            minTrackingConfidence: 0.6
+            modelComplexity: 1, // 手机上也使用 1，防止 Lite 版本在某些光线下太蠢
+            minDetectionConfidence: 0.5, 
+            minTrackingConfidence: 0.5
         });
         
-        hands.onResults(onResults);
+        hands.onResults((results) => {
+            // 1. 将数据传给 Three.js
+            onResults(results);
+
+            // 2. 【新增】在左下角画出红色的手部骨骼 (天眼功能)
+            debugCtx.save();
+            debugCtx.clearRect(0, 0, debugCanvas.width, debugCanvas.height);
+            debugCtx.drawImage(results.image, 0, 0, debugCanvas.width, debugCanvas.height);
+            
+            if (results.multiHandLandmarks) {
+                for (const landmarks of results.multiHandLandmarks) {
+                    drawConnectors(debugCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 2}); // 绿色骨骼
+                    drawLandmarks(debugCtx, landmarks, {color: '#FF0000', lineWidth: 1, radius: 2}); // 红色关节
+                }
+            }
+            debugCtx.restore();
+            
+            // 更新调试信息
+            debugInfo.innerText = `Hands: ${results.multiHandLandmarks.length}`;
+        });
         
+        // 【关键】为手机设置竖屏分辨率，不要用 320x240
+        const w = isMobile ? 360 : 640;
+        const h = isMobile ? 480 : 480;
+
         const cameraUtils = new Camera(videoElement, { 
             onFrame: async () => { await hands.send({image: videoElement}); }, 
-            width: 320, 
-            height: 240 
+            width: w, 
+            height: h,
+            facingMode: 'user'
         });
+        
+        // 设置画布尺寸匹配视频
+        videoElement.onloadedmetadata = () => {
+             debugCanvas.width = videoElement.videoWidth;
+             debugCanvas.height = videoElement.videoHeight;
+        };
         
         await cameraUtils.start();
     }
 
-    // === 辅助纹理 ===
     function createSoftTexture() {
         const c = document.createElement('canvas'); c.width=64; c.height=64;
         const ctx = c.getContext('2d');
@@ -473,7 +508,6 @@
     }
     const commonTexture = createSoftTexture();
 
-    // === 核心类：手部光球 ===
     class SwirlHandCloud {
         constructor(color) {
             this.count = CONFIG.handParticleCount;
@@ -485,7 +519,7 @@
 
             for(let i=0; i<this.count; i++) {
                 pos[i*3] = 0; pos[i*3+1] = 0; pos[i*3+2] = 0;
-                sizes[i] = Math.random() * 1.8 + 0.9;
+                sizes[i] = Math.random() * (CONFIG.handParticleSize * 0.8) + (CONFIG.handParticleSize * 0.2);
                 colors[i*3] = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b;
             }
 
@@ -507,15 +541,12 @@
 
         update(targetPos, isDetected, isCharging, chargeCenter, progress) {
             const positions = this.geo.attributes.position.array;
-            
             const targetOpacity = (isDetected && currentState !== STATE.ACTIVE) ? 0.8 : 0;
             this.mat.opacity += (targetOpacity - this.mat.opacity) * 0.1;
-
             if (this.mat.opacity < 0.01) return;
 
             const spread = isCharging ? CONFIG.handSpreadCharging : CONFIG.handSpreadNormal;
             const attractStrength = isCharging ? CONFIG.handAttractStrength : 0.08; 
-            const noiseStrength = isCharging ? 0.1 : 0.8; 
             const attractPoint = isCharging ? chargeCenter : targetPos;
 
             for(let i=0; i<this.count; i++) {
@@ -536,9 +567,9 @@
                     v.z -= (pz - chargeCenter.z) * 0.1; 
                 }
 
-                v.x += (Math.random()-0.5) * noiseStrength;
-                v.y += (Math.random()-0.5) * noiseStrength;
-                v.z += (Math.random()-0.5) * noiseStrength;
+                v.x += (Math.random()-0.5) * 0.2; 
+                v.y += (Math.random()-0.5) * 0.2;
+                v.z += (Math.random()-0.5) * 0.2;
 
                 const damping = 0.8;
                 v.x *= damping; v.y *= damping; v.z *= damping;
@@ -552,7 +583,6 @@
                     const dy = positions[idx+1] - attractPoint.y;
                     const dz = positions[idx+2] - attractPoint.z;
                     const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
-                    
                     if (dist > spread * 2.0) {
                             const ratio = (spread * 2.0) / dist;
                             positions[idx] = attractPoint.x + dx * ratio;
@@ -565,7 +595,6 @@
         }
     }
 
-    // === 核心类：变形系统 (包含修复逻辑) ===
     class MorphingParticleSystem {
         constructor() {
             this.count = CONFIG.morphParticleCount;
@@ -574,10 +603,7 @@
             const cols = new Float32Array(this.count * 3);
             const sizes = new Float32Array(this.count);
 
-            this.targets = {
-                heart: new Float32Array(this.count * 3),
-                texts: [] 
-            };
+            this.targets = { heart: new Float32Array(this.count * 3), texts: [] };
 
             const cA = new THREE.Color(CONFIG.heartColorA);
             const cB = new THREE.Color(CONFIG.heartColorB);
@@ -585,7 +611,6 @@
                 pos[i*3] = (Math.random()-0.5)*300; 
                 pos[i*3+1] = (Math.random()-0.5)*300;
                 pos[i*3+2] = (Math.random()-0.5)*300;
-
                 const ratio = Math.random();
                 const c = cA.clone().lerp(cB, ratio);
                 cols[i*3] = c.r; cols[i*3+1] = c.g; cols[i*3+2] = c.b;
@@ -636,7 +661,6 @@
                 ctx.clearRect(0,0,w,h);
                 ctx.fillStyle = '#000'; ctx.fillRect(0,0,w,h);
                 ctx.fillStyle = '#fff';
-                // 动态调整字体大小，字越多越小
                 let fontSize = 70;
                 if(phrase.length > 8) fontSize = 50;
                 if(phrase.length > 15) fontSize = 35;
@@ -647,8 +671,9 @@
 
                 const data = ctx.getImageData(0,0,w,h).data;
                 const validPixels = [];
-                for(let y=0; y<h; y+=4) { 
-                    for(let x=0; x<w; x+=4) {
+                const step = isMobile ? 5 : 4;
+                for(let y=0; y<h; y+=step) { 
+                    for(let x=0; x<w; x+=step) {
                         if(data[(y*w+x)*4] > 128) validPixels.push({x,y});
                     }
                 }
@@ -695,7 +720,6 @@
                     if (sineVal < -0.8 && !this.beatFlag) {
                         this.beatCount++;
                         this.beatFlag = true;
-                        
                         if (this.beatCount >= CONFIG.beatsToPerform) {
                             this.animState = 'SHOWING_TEXT';
                             this.lastStateChangeTime = time;
@@ -712,14 +736,11 @@
                     } else {
                         currentTargets = this.targets.heart; 
                     }
-                    
                     lerpFactor = 0.05; 
                     const timeInState = time - this.lastStateChangeTime;
-                    
                     if (timeInState > CONFIG.textDisplayTime) {
                         this.textIndex++;
                         this.lastStateChangeTime = time; 
-
                         if (this.textIndex >= CONFIG.textPhrases.length) {
                             this.animState = 'BEATING';
                             this.beatCount = 0;
@@ -753,7 +774,6 @@
                     
                     positions[idx] += Math.sin(time * 3 + positions[idx+1]*0.05) * 0.02;
                 }
-
                 positions[idx] += (Math.random()-0.5)*0.1;
                 positions[idx+1] += (Math.random()-0.5)*0.1;
                 positions[idx+2] += (Math.random()-0.5)*0.1;
@@ -763,10 +783,8 @@
         }
     }
 
-    // === 主循环 ===
     function animate() {
         if(!isRunning) return;
-        
         requestAnimationFrame(animate);
         const time = clock.getElapsedTime();
         const dt = clock.getDelta();
@@ -790,7 +808,6 @@
         handR.update(rTarget, rDetected, isCharging, gestureCenter, progress);
         
         morphSystem.update(time, dt);
-
         updateUI(progress, lDetected, rDetected);
         composer.render();
     }
@@ -827,8 +844,11 @@
     }
 
     function mapToWorld(x, y) {
-        const w = 75; const h = 55; 
-        const wx = (0.5 - x) * w; const wy = (0.5 - y) * h;
+        // 手机上的坐标映射调整
+        const w = isMobile ? 50 : 75; 
+        const h = isMobile ? 80 : 55; 
+        const wx = (0.5 - x) * w; 
+        const wy = (0.5 - y) * h;
         return new THREE.Vector3(wx, wy, 0);
     }
 
@@ -869,7 +889,6 @@
         morphSystem.startSequence();
     }
     
-    // 页面加载即尝试获取 VIP 数据
     fetchDecryptedPayload();
 
 </script>

@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2026 专属烟花祝福</title>
+    
+    <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #020205; /* 深邃黑背景 */
+            font-family: 'Microsoft YaHei', sans-serif;
+            touch-action: none; 
+        }
+
+        #world {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background-color: #020205;
+            overflow: hidden;
+        }
+
+        canvas { display: block; }
+        
+        /* === 启动页容器 === */
+        #start-container {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            text-align: center;
+            transition: opacity 0.8s ease;
+        }
+
+        /* 启动按钮 */
+        #overlay {
+            display: inline-block;
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 16px;
+            letter-spacing: 4px; /* 稍微缩小字间距适配长文字 */
+            cursor: pointer;
+            background: rgba(20, 20, 30, 0.6); 
+            backdrop-filter: blur(12px);
+            padding: 20px 60px;
+            border-radius: 100px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 30px rgba(100, 150, 255, 0.15);
+            transition: transform 0.2s, box-shadow 0.3s;
+            font-weight: 300;
+            text-transform: uppercase;
+            white-space: nowrap;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #overlay:hover {
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 50px rgba(120, 180, 255, 0.3);
+            transform: scale(1.02);
+        }
+        
+        #overlay:active { transform: scale(0.95); }
+
+        /* 按钮光效 */
+        #overlay::before {
+            content: ''; position: absolute;
+            top: var(--y, 50%); left: var(--x, 50%);
+            transform: translate(-50%, -50%);
+            width: 150px; height: 150px;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+            opacity: 0; transition: opacity 0.3s;
+            pointer-events: none; mix-blend-mode: overlay; 
+        }
+        #overlay:hover::before { opacity: 1; }
+
+        /* === 启动页下方版权小字 === */
+        #start-subtext {
+            margin-top: 15px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 1px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        #start-subtext:hover { color: rgba(255, 255, 255, 0.8); text-decoration: underline; }
+
+        /* === 右上角水印 (仅免费版显示) === */
+        #watermark {
+            position: absolute;
+            top: 20px; right: 25px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+            letter-spacing: 2px;
+            z-index: 5;
+            cursor: pointer;
+            font-weight: bold;
+            pointer-events: auto;
+            transition: all 0.3s;
+            display: none; 
+        }
+        #watermark:hover {
+            color: rgba(255, 255, 255, 0.8);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        /* === 结束后的彩蛋广告 (仅免费版显示) === */
+        #end-ad {
+            position: absolute;
+            bottom: 40px; right: 30px; 
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            padding: 10px 20px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 13px;
+            letter-spacing: 1px;
+            cursor: pointer;
+            z-index: 8;
+            opacity: 0; 
+            transform: translateY(20px);
+            transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+            display: none; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        #end-ad:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(20px) scale(1.05);
+            box-shadow: 0 5px 25px rgba(100, 200, 255, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            #end-ad {
+                bottom: 30px; right: 50%;
+                transform: translateX(50%) translateY(20px);
+                width: max-content;
+            }
+            #end-ad:hover {
+                transform: translateX(50%) translateY(20px) scale(1.05);
+            }
+            #end-ad.visible {
+                opacity: 1;
+                transform: translateX(50%) translateY(0) !important;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            #end-ad.visible {
+                opacity: 1;
+                transform: translateY(0) !important;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="world">
+    <div id="start-container">
+        <div id="overlay" onmousemove="moveGlow(event)" ontouchmove="moveGlow(event)">开启 2026 🎆</div>
+        <div id="start-subtext" onclick="goBuy()">Powered by 七叶怀瑾 | 定制专属文字</div>
+    </div>
+
+    <div id="watermark" onclick="goBuy()">七叶怀瑾</div>
+
+    <div id="end-ad" onclick="goBuy()">
+        我也要送 TA 一句独特的祝福 <span style="margin-left:8px; opacity:0.7">👉 点击获取专属链接</span>
+    </div>
+
+    <canvas id="canvas"></canvas>
+</div>
+
+<script>
+    // === V36.0 无倒计时单句版 ===
+    
+    const BUY_LINK = "../#buy"; 
+    const API_DECODE_URL = "https://vimalin.xyz:8443/api/decode"; 
+
+    // === 核心配置 ===
+    let config = {
+        // 【修改点】默认只有一句话，没有倒计时
+        textList: ["2026 新年快乐"],
+        
+        // --- 视觉与物理配置 ---
+        fontSizeMultiplier: 0.12, 
+        resolutionGap: 4,         // 间距4 (细腻)
+        particleSize: 1.8,        // 粒子1.8 (小巧)
+        secondaryChance: 0.3,     // 30%概率二次爆炸
+        gravity: 0.05,            
+        friction: 0.96,           
+        trailAlpha: 0.12,         // 拖尾透明度
+        
+        // --- 发射逻辑 ---
+        normalFireworkChance: 0.1, // 小烟花常放
+        bigFireworkChance: 0.05    // 大烟花受锁控制
+    };
+
+    // 全局状态
+    let isPaidUser = false; 
+    let hasShownAd = false; 
+    let isRunning = false;
+    let currentTextIndex = 0;
+    
+    // 烟花相关全局变量
+    let fireworks = [];
+    let particles = [];
+    let textGrid = {}; 
+    let totalTextPixels = 0;
+    let filledPixels = 0;
+    let isTextFull = false;
+    let bigFireworkActive = false;
+    let bigFireworkCooldown = 0;
+    let isSwitchingText = false; 
+
+    function goBuy() { window.location.href = BUY_LINK; }
+
+    function moveGlow(e) {
+        const btn = e.currentTarget;
+        const rect = btn.getBoundingClientRect();
+        let clientX = e.clientX;
+        let clientY = e.clientY;
+        if(e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        }
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        btn.style.setProperty('--x', x + 'px');
+        btn.style.setProperty('--y', y + 'px');
+    }
+
+    // === 1. 获取解密数据 ===
+    async function fetchDecryptedPayload() {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        
+        if (code) {
+            try {
+                const response = await fetch(API_DECODE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code })
+                });
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    const payload = result.data;
+                    console.log("Verified Gift:", payload);
+                    
+                    if (payload.name || payload.wish) { 
+                        isPaidUser = true; 
+                        
+                        // 【修改点】付费版也不再加倒计时，直接放内容
+                        let newTextList = []; 
+                        
+                        if(payload.name) newTextList.push(payload.name); 
+                        
+                        if(payload.wish) { 
+                            const lines = payload.wish.split('\n').filter(line => line.trim() !== ''); 
+                            newTextList.push(...lines); 
+                        } 
+                        
+                        // 如果因为某种原因列表空了，给个保底
+                        if(newTextList.length === 0) newTextList.push("2026 新年快乐");
+
+                        config.textList = newTextList; 
+                        initUI(); 
+                    }
+                }
+            } catch (e) { console.error("API Error:", e); }
+        }
+    }
+    fetchDecryptedPayload();
+
+    function initUI() {
+        if (isPaidUser) {
+            const wm = document.getElementById('watermark');
+            if(wm) wm.style.display = 'none';
+        } else {
+            const wm = document.getElementById('watermark');
+            if(wm) wm.style.display = 'block';
+            const endAd = document.getElementById('end-ad');
+            if(endAd) endAd.style.display = 'block';
+        }
+    }
+    initUI();
+
+    const world = document.getElementById('world');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    let width, height;
+    let isMobile = false;
+    let dpr = 1;
+
+    // === 2. 初始化画布 ===
+    function init() {
+        const screenW = window.innerWidth;
+        const screenH = window.innerHeight;
+
+        // 强制横屏逻辑
+        if (screenW < screenH) {
+            isMobile = true;
+            world.style.width = screenH + 'px';
+            world.style.height = screenW + 'px';
+            world.style.transform = 'rotate(90deg)';
+            world.style.transformOrigin = 'top left';
+            world.style.left = '100%'; 
+            world.style.top = '0';
+            width = screenH;
+            height = screenW;
+        } else {
+            isMobile = screenW < 1024;
+            world.style.width = '100vw';
+            world.style.height = '100vh';
+            world.style.transform = 'none';
+            world.style.left = '0';
+            width = screenW;
+            height = screenH;
+        }
+
+        dpr = window.devicePixelRatio || 1;
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+        ctx.scale(dpr, dpr);
+        
+        // 初始化当前文字
+        initTextGrid(config.textList[currentTextIndex]);
+    }
+
+    window.addEventListener('resize', () => {
+        if(!isRunning) init();
+        else {
+            // window.location.reload(); 
+        }
+    });
+
+    // === 3. 核心：建立文字网格 ===
+    function initTextGrid(text) {
+        textGrid = {};
+        totalTextPixels = 0;
+        filledPixels = 0;
+        isTextFull = false;
+        
+        // 清理粘住的粒子
+        particles.forEach(p => {
+            if(p.isStuck) {
+                p.isStuck = false;
+                p.dead = true;
+                p.alpha = 0;
+            }
+        });
+        particles = particles.filter(p => !p.dead);
+
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+
+        // 动态调整字体大小
+        let fontSize = Math.min(width, height) * config.fontSizeMultiplier;
+        if (isMobile) fontSize *= 1.4; 
+        
+        // 【修改点】根据字数微调，因为现在默认句子比较长
+        if (text.length > 7) fontSize *= 0.6;
+        else if (text.length > 4) fontSize *= 0.8;
+
+        tempCtx.font = `bold ${fontSize}px "Microsoft YaHei", sans-serif`;
+        tempCtx.fillStyle = 'white';
+        tempCtx.textAlign = 'center';
+        tempCtx.textBaseline = 'middle';
+        tempCtx.fillText(text, width / 2, height / 2);
+
+        const imageData = tempCtx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+        const gap = config.resolutionGap;
+
+        for (let y = height - 1; y >= 0; y -= gap) {
+            const alignedY = Math.floor(y / gap) * gap;
+            if (!textGrid[alignedY]) textGrid[alignedY] = {};
+            
+            for (let x = 0; x < width; x += gap) {
+                const alignedX = Math.floor(x / gap) * gap;
+                if (data[(y * width + x) * 4 + 3] > 128) {
+                    textGrid[alignedY][alignedX] = {
+                        filled: false,
+                        color: null
+                    };
+                    totalTextPixels++;
+                }
+            }
+        }
+        console.log(`Text "${text}" Grid Ready: ${totalTextPixels} points`);
+    }
+
+    // === 4. 烟花系统 ===
+    class Firework {
+        constructor(type) {
+            this.type = type; 
+            this.x = Math.random() * width;
+            this.y = height;
+            
+            if (this.type === 'big') {
+                this.targetY = height * 0.15 + Math.random() * (height * 0.25); 
+                this.speed = 11 + Math.random() * 3;
+            } else {
+                this.targetY = height * 0.2 + Math.random() * (height * 0.5);
+                this.speed = 8 + Math.random() * 4;
+            }
+
+            this.angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.15;
+            this.vx = Math.cos(this.angle) * this.speed;
+            this.vy = Math.sin(this.angle) * this.speed;
+            this.hue = Math.floor(Math.random() * 360);
+            this.dead = false;
+        }
+
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            this.vy += config.gravity;
+
+            if (this.vy >= 0 || this.y <= this.targetY) {
+                this.dead = true;
+                createExplosion(this.x, this.y, this.hue, this.type, 1);
+            }
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.type === 'big' ? 2.5 : 1.5, 0, Math.PI * 2);
+            ctx.fillStyle = `hsl(${this.hue}, 80%, 60%)`;
+            ctx.fill();
+        }
+    }
+
+    class Particle {
+        constructor(x, y, vx, vy, hue, type, generation) {
+            this.x = x; this.y = y;
+            this.vx = vx; this.vy = vy;
+            this.type = type;
+            this.generation = generation;
+
+            const colorVar = (Math.random() - 0.5) * 50;
+            this.color = `hsl(${hue + colorVar}, 90%, 65%)`;
+            this.alpha = 1;
+            this.decay = (type === 'big') ? (Math.random() * 0.006 + 0.003) : (Math.random() * 0.015 + 0.005);
+            
+            this.isStuck = false;
+            this.hasSecondary = (type === 'big' && generation === 1) && (Math.random() < config.secondaryChance);
+        }
+
+        update() {
+            if (this.isStuck) return;
+
+            this.vx *= config.friction;
+            this.vy *= config.friction;
+            this.vy += config.gravity;
+            this.x += this.vx;
+            this.y += this.vy;
+            this.alpha -= this.decay;
+
+            if (this.hasSecondary && this.alpha < 0.5 && this.alpha > 0.2) {
+                this.hasSecondary = false; 
+                const subHue = parseInt(this.color.match(/\d+/)[0]) + 30; 
+                createExplosion(this.x, this.y, subHue, 'big', 2);
+                this.alpha = 0; 
+                return;
+            }
+
+            // 盛水填充
+            if (!isTextFull && this.vy > 0) {
+                const gap = config.resolutionGap;
+                const gridX = Math.floor(this.x / gap) * gap;
+                const gridY = Math.floor(this.y / gap) * gap;
+
+                if (textGrid[gridY] && textGrid[gridY][gridX] && !textGrid[gridY][gridX].filled) {
+                    const nextGridY = gridY + gap;
+                    let canFill = false;
+                    
+                    if (!textGrid[nextGridY] || !textGrid[nextGridY][gridX]) {
+                        canFill = true; 
+                    } else if (textGrid[nextGridY][gridX].filled) {
+                        canFill = true; 
+                    }
+
+                    if (canFill) {
+                        this.isStuck = true;
+                        this.x = gridX;
+                        this.y = gridY;
+                        this.alpha = 1; 
+                        this.hasSecondary = false; 
+                        
+                        textGrid[gridY][gridX].filled = true;
+                        textGrid[gridY][gridX].color = this.color;
+                        filledPixels++;
+                        
+                        if (filledPixels >= totalTextPixels) isTextFull = true;
+                    }
+                }
+            }
+        }
+
+        draw() {
+            ctx.save();
+            const finalColor = this.isStuck && textGrid[this.y] ? textGrid[this.y][this.x].color : this.color;
+            ctx.globalAlpha = this.alpha;
+            ctx.beginPath();
+            
+            let size = config.particleSize; 
+            if (this.isStuck) size = config.particleSize * 0.9; 
+            
+            ctx.arc(this.x, this.y, size, 0, Math.PI * 2);
+            ctx.fillStyle = finalColor;
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    function createExplosion(x, y, hue, type, generation) {
+        const sizeScale = 0.5 + Math.random() * 1.5; 
+        
+        let particleCount;
+        if (type === 'big') {
+            particleCount = (generation === 1) ? 300 * sizeScale : 20; 
+        } else {
+            particleCount = 60; 
+        }
+
+        const styles = ['sphere', 'ring', 'burst', 'double'];
+        let style = 'burst';
+        if (type === 'big' && generation === 1) {
+            style = styles[Math.floor(Math.random() * styles.length)];
+        }
+
+        for (let i = 0; i < particleCount; i++) {
+            let vx, vy, speed, angle;
+            switch(style) {
+                case 'ring':
+                    angle = (Math.PI * 2 / particleCount) * i;
+                    speed = 6 * sizeScale;
+                    vx = Math.cos(angle) * speed;
+                    vy = Math.sin(angle) * speed;
+                    break;
+                case 'double':
+                    angle = Math.random() * Math.PI * 2;
+                    speed = (i % 2 === 0 ? 8 : 4) * sizeScale;
+                    vx = Math.cos(angle) * speed;
+                    vy = Math.sin(angle) * speed;
+                    break;
+                case 'sphere':
+                    angle = Math.random() * Math.PI * 2;
+                    speed = Math.random() * 9 * sizeScale;
+                    vx = Math.cos(angle) * speed;
+                    vy = Math.sin(angle) * speed;
+                    break;
+                case 'burst': default:
+                    angle = Math.random() * Math.PI * 2;
+                    let baseSpeed = (type === 'big') ? 8 : 4;
+                    speed = (Math.random() * baseSpeed + 2) * sizeScale;
+                    vx = Math.cos(angle) * speed;
+                    vy = Math.sin(angle) * speed;
+                    break;
+            }
+            particles.push(new Particle(x, y, vx, vy, hue, type, generation));
+        }
+
+        if (type === 'big' && generation === 1) {
+            bigFireworkCooldown = Date.now() + 2500;
+        }
+    }
+
+    // === 5. 动画循环 ===
+    function animate() {
+        if(!isRunning) return;
+        requestAnimationFrame(animate);
+
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = `rgba(2, 2, 5, ${config.trailAlpha})`;
+        ctx.fillRect(0, 0, width, height);
+        ctx.globalCompositeOperation = 'lighter';
+
+        // 发射
+        if (Math.random() < config.normalFireworkChance) fireworks.push(new Firework('normal'));
+        if (bigFireworkActive) {
+            if (Date.now() > bigFireworkCooldown) {
+                const bigParticlesLeft = particles.filter(p => p.type === 'big' && !p.isStuck).length;
+                if (bigParticlesLeft < 50) bigFireworkActive = false;
+            }
+        } else if (Math.random() < config.bigFireworkChance) {
+            fireworks.push(new Firework('big'));
+            bigFireworkActive = true;
+        }
+
+        // 更新实体
+        for (let i = fireworks.length - 1; i >= 0; i--) {
+            fireworks[i].update();
+            fireworks[i].draw();
+            if (fireworks[i].dead) fireworks.splice(i, 1);
+        }
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+            particles[i].update();
+            particles[i].draw();
+            if (!particles[i].isStuck && particles[i].alpha <= 0.01) {
+                particles.splice(i, 1);
+            }
+        }
+
+        // 切换文字逻辑
+        if (isTextFull && !isSwitchingText) {
+            isSwitchingText = true;
+            // 默认停留 3秒
+            setTimeout(() => {
+                currentTextIndex++;
+                if (currentTextIndex >= config.textList.length) {
+                    currentTextIndex = config.textList.length - 1; 
+                    
+                    // 显示底部广告
+                    if (!hasShownAd && !isPaidUser) {
+                        const ad = document.getElementById('end-ad');
+                        if(ad) {
+                            ad.style.display = 'block'; 
+                            setTimeout(() => ad.classList.add('visible'), 100); 
+                        }
+                        hasShownAd = true;
+                    }
+                } else {
+                    initTextGrid(config.textList[currentTextIndex]);
+                    isSwitchingText = false;
+                }
+            }, 3000);
+        }
+    }
+
+    // === 6. 交互 ===
+    init(); // 预加载
+
+    const overlay = document.getElementById('overlay');
+    const startContainer = document.getElementById('start-container');
+
+    overlay.addEventListener('click', () => {
+        startContainer.style.opacity = '0';
+        setTimeout(() => startContainer.style.display = 'none', 800);
+        
+        if (!isRunning) {
+            isRunning = true;
+            init(); 
+            animate();
+        }
+    });
+
+</script>
+</body>
+</html>
