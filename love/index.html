@@ -2,31 +2,68 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magical Love Particle Loop</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2026 专属手势祝福</title>
+    
+    <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Helvetica Neue', Arial, sans-serif; }
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Microsoft YaHei', sans-serif;
+            touch-action: none; 
+        }
+
+        #world {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: #000;
+            overflow: hidden;
+        }
+
+        /* 3D Canvas */
+        #three-canvas { 
+            display: block; 
+            width: 100%; 
+            height: 100%; 
+        }
         
+        /* === 摄像头预览 (隐藏但保留占位) === */
         #video-container {
             position: absolute;
-            bottom: 20px;
-            left: 20px;
-            width: 160px;
-            height: 120px;
+            bottom: 20px; left: 20px;
+            width: 160px; height: 120px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 8px;
             overflow: hidden;
             z-index: 10;
-            opacity: 0.3;
+            opacity: 0; /* 初始隐藏，点击开始后显示 */
             transform: scaleX(-1);
             pointer-events: none;
+            transition: opacity 1s;
         }
         #input_video { width: 100%; height: 100%; object-fit: cover; }
-        
+
+        /* === 3D 交互提示 UI === */
         #ui-container {
             position: absolute;
-            top: 65%;
-            left: 0;
+            top: 75%; left: 0;
             width: 100%;
             transform: translateY(-50%);
             text-align: center;
@@ -35,6 +72,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            opacity: 0; /* 初始隐藏 */
+            transition: opacity 1s;
         }
 
         #ui-hint {
@@ -48,8 +87,7 @@
         }
 
         #progress-bar-bg {
-            width: 180px;
-            height: 3px;
+            width: 180px; height: 3px;
             background: rgba(255,255,255,0.15);
             border-radius: 1.5px;
             overflow: hidden;
@@ -58,40 +96,145 @@
         }
         
         #progress-bar {
-            width: 0%;
-            height: 100%;
+            width: 0%; height: 100%;
             background: linear-gradient(90deg, #ff3366, #ff99cc);
             box-shadow: 0 0 15px #ff3366;
             transition: width 0.1s linear;
         }
 
-        #loading {
+        /* === 启动页容器 === */
+        #start-container {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            color: rgba(255,255,255,0.6);
-            font-size: 14px;
+            z-index: 20;
+            text-align: center;
+            transition: opacity 0.8s ease;
+        }
+
+        /* === 【关键修改】少女粉按钮样式 === */
+        #overlay {
+            display: inline-block;
+            color: rgba(255, 240, 245, 1); /* 文字：浅粉白 */
+            font-size: 16px;
+            letter-spacing: 4px; /* 字间距稍微收一点，因为加了emoji */
+            cursor: pointer;
+            
+            /* 背景：带一点透明度的深粉色 */
+            background: rgba(80, 20, 40, 0.6); 
+            backdrop-filter: blur(12px);
+            padding: 20px 50px;
+            border-radius: 100px;
+            
+            /* 边框：粉色 */
+            border: 1px solid rgba(255, 105, 180, 0.4);
+            /* 阴影：粉色光晕 */
+            box-shadow: 0 0 30px rgba(255, 20, 147, 0.3);
+            
+            transition: transform 0.2s, box-shadow 0.3s, background 0.3s;
+            font-weight: 400;
+            text-transform: uppercase;
+            white-space: nowrap;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 鼠标移上去的效果：变得更粉更亮 */
+        #overlay:hover {
+            background: rgba(100, 20, 50, 0.7);
+            border-color: rgba(255, 182, 193, 0.8);
+            /* 强烈的粉色发光 */
+            box-shadow: 0 0 50px rgba(255, 105, 180, 0.6); 
+            transform: scale(1.02);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+        
+        /* 按钮内部的流光特效：也是粉色的 */
+        #overlay::before {
+            content: ''; position: absolute;
+            top: var(--y, 50%); left: var(--x, 50%);
+            transform: translate(-50%, -50%);
+            width: 150px; height: 150px;
+            /* 径向渐变：粉色 -> 透明 */
+            background: radial-gradient(circle, rgba(255, 192, 203, 0.4) 0%, transparent 70%);
+            opacity: 0; transition: opacity 0.3s;
+            pointer-events: none; mix-blend-mode: overlay; 
+        }
+        #overlay:hover::before { opacity: 1; }
+        
+        /* 版权小字 */
+        #start-subtext {
+            margin-top: 20px;
+            font-size: 11px;
+            color: rgba(255, 182, 193, 0.5); /* 淡淡的粉色 */
+            letter-spacing: 1px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        #start-subtext:hover { color: rgba(255, 192, 203, 0.9); text-decoration: underline; }
+
+        /* === 右上角水印 === */
+        #watermark {
+            position: absolute;
+            top: 20px; right: 25px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
             letter-spacing: 2px;
+            z-index: 5;
+            cursor: pointer;
+            font-weight: bold;
+            pointer-events: auto;
+            transition: all 0.3s;
+            display: none;
         }
+        #watermark:hover { color: rgba(255, 255, 255, 0.8); text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
+
+        /* === 底部广告 === */
+        #end-ad {
+            position: absolute;
+            bottom: 40px; right: 30px; 
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            padding: 10px 20px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 13px;
+            letter-spacing: 1px;
+            cursor: pointer;
+            z-index: 8;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+            display: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        #end-ad.visible { opacity: 1; transform: translateY(0); }
+        
+        #loading-text {
+            display: none;
+            margin-top: 15px; 
+            color: rgba(255, 192, 203, 0.6); /* 粉色加载文字 */
+            font-size: 12px; letter-spacing: 2px;
+        }
+
+        @media (max-width: 768px) {
+            #end-ad { bottom: 30px; right: 50%; transform: translateX(50%) translateY(20px); width: max-content; }
+            #end-ad.visible { transform: translateX(50%) translateY(0); }
+        }
+
     </style>
-
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
-
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
 </head>
 <body>
 
-    <div id="loading">INITIALIZING MAGIC...</div>
-    
+<div id="world">
+    <div id="start-container">
+        <div id="overlay" onclick="startExperience()" onmousemove="moveGlow(event)" ontouchmove="moveGlow(event)">✨ 开启 2026 魔法 ✨</div>
+        <div id="loading-text">正在准备魔法...</div>
+        <div id="start-subtext" onclick="goBuy()">Powered by 七叶怀瑾 | 定制专属特效</div>
+    </div>
+
     <div id="ui-container">
         <div id="ui-hint">Wave Hands to Summon</div>
         <div id="progress-bar-bg"><div id="progress-bar"></div></div>
@@ -101,519 +244,634 @@
         <video id="input_video"></video>
     </div>
 
+    <div id="watermark" onclick="goBuy()">七叶怀瑾</div>
+    <div id="end-ad" onclick="goBuy()">
+        我也要送 TA 一片独特祝福的星空 <span style="margin-left:8px; opacity:0.7">👉 点击定制</span>
+    </div>
+
+    <canvas id="three-canvas"></canvas>
     <canvas id="textCanvas" width="512" height="256" style="display:none;"></canvas>
+</div>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+<script type="module">
+    import * as THREE from 'three';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 
-        const CONFIG = {
-            // --- 颜色配置 ---
-            handCloudColor: 0xff77aa, 
-            heartColorA: 0xff0055,    
-            heartColorB: 0xff99cc,    
+    // === 配置区域 ===
+    const CONFIG = {
+        // 1. 颜色与视觉
+        handCloudColor: 0xff66aa,  
+        heartColorA: 0xff0033,     
+        heartColorB: 0xff99cc,     
 
-            // --- 手部云团配置 ---
-            handParticleCount: 1500,   
-            handParticleSize: 1.8,     
-            handSpreadNormal: 12.0,    
-            handSpreadCharging: 1.0,   // 【修改】极度聚拢，变成一个小光球
-            
-            // --- 变形系统配置 ---
-            morphParticleCount: 25000, // 增加粒子数，文字更清晰
-            // 【修改】示例文字，两段
-            textPhrases: ["I LOVE U", "FOREVER"], 
-            // 【修改】每段文字显示2秒
-            textDisplayTime: 2.0,      
-            // 【修改】爱心跳动3下
-            beatsToPerform: 3,         
+        bloomStrength: 1.4,        
+        bloomRadius: 0.4,          
+        
+        // 2. 粒子
+        handParticleCount: 1500,   
+        handParticleSize: 2.5,     
 
-            // --- 交互阈值 ---
-            // 【修改】蓄力时间加长，稍微拖一点时间 (原本90)
-            gestureHoldTime: 160,      
-            connectThreshold: 8.5,
-            
-            // --- 视觉效果 ---
-            bloomStrength: 1.3,       
-            bloomRadius: 0.6,
-            cameraZ: 70
-        };
+        // 3. 交互灵敏度
+        connectThreshold: 5.0,    
+        gestureHoldTime: 100,      
+        
+        // 4. 动画流程
+        morphParticleCount: 25000, 
+        textPhrases: ["I LOVE U", "FOREVER"], 
+        textDisplayTime: 4.0,      
+        beatsToPerform: 3,         
 
-        let scene, camera, renderer, composer;
-        let handL, handR; 
-        let morphSystem; 
-        let clock = new THREE.Clock();
+        // 5. 物理
+        handAttractStrength: 0.5,  
+        handSwirlSpeed: 0.6,       
+        handSpreadCharging: 7.0,   
+        handSpreadNormal: 17.0,    
+        
+        cameraZ: 70
+    };
 
-        const STATE = { SEARCHING: 0, ALIGNING: 1, CHARGING: 2, ACTIVE: 3 };
-        let currentState = STATE.SEARCHING;
-        let chargeCounter = 0;
+    // === 全局变量 ===
+    const BUY_LINK = "../#buy"; 
+    const API_DECODE_URL = "https://vimalin.xyz:8443/api/decode"; 
+    let isPaidUser = false;
 
-        let handsData = [];
-        let gestureCenter = new THREE.Vector3();
+    let scene, camera, renderer, composer;
+    let handL, handR; 
+    let morphSystem; 
+    let clock = new THREE.Clock();
 
-        function init() {
-            const canvas = document.createElement('canvas');
-            document.body.appendChild(canvas);
+    const STATE = { SEARCHING: 0, ALIGNING: 1, CHARGING: 2, ACTIVE: 3 };
+    let currentState = STATE.SEARCHING;
+    let chargeCounter = 0;
+    let handsData = [];
+    let gestureCenter = new THREE.Vector3();
+    let isRunning = false; 
 
-            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-            scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x050008, 0.015);
-
-            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 0, CONFIG.cameraZ);
-
-            // 后处理 - 辉光
-            const renderScene = new RenderPass(scene, camera);
-            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-            bloomPass.strength = CONFIG.bloomStrength;
-            bloomPass.radius = CONFIG.bloomRadius;
-            bloomPass.threshold = 0.1;
-
-            composer = new EffectComposer(renderer);
-            composer.addPass(renderScene);
-            composer.addPass(bloomPass);
-
-            // 初始化系统
-            handL = new SwirlHandCloud(CONFIG.handCloudColor);
-            handR = new SwirlHandCloud(CONFIG.handCloudColor);
-            
-            morphSystem = new MorphingParticleSystem();
-
-            window.addEventListener('resize', onResize);
+    // === 暴露给全局的函数 ===
+    window.goBuy = function() { window.location.href = BUY_LINK; };
+    
+    // 【新增】移动光效函数
+    window.moveGlow = function(e) {
+        const btn = e.currentTarget;
+        const rect = btn.getBoundingClientRect();
+        let clientX = e.clientX;
+        let clientY = e.clientY;
+        if(e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
         }
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        btn.style.setProperty('--x', x + 'px');
+        btn.style.setProperty('--y', y + 'px');
+    };
 
-        function onResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
-        }
+    window.startExperience = async function() {
+        const overlay = document.getElementById('overlay');
+        const loadingText = document.getElementById('loading-text');
+        
+        overlay.style.display = 'none';
+        loadingText.style.display = 'block';
 
-        function createSoftTexture() {
-            const c = document.createElement('canvas'); c.width=64; c.height=64;
-            const ctx = c.getContext('2d');
-            const g = ctx.createRadialGradient(32,32,0,32,32,32);
-            g.addColorStop(0, 'rgba(255,255,255,1)');
-            g.addColorStop(0.4, 'rgba(255,220,230,0.3)');
-            g.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = g; ctx.fillRect(0,0,64,64);
-            return new THREE.CanvasTexture(c);
-        }
-        const commonTexture = createSoftTexture();
+        initThreeJS();
+        await initMediaPipe();
 
-        // --- 系统1：旋涡手部云气 (增强向心力版) ---
-        class SwirlHandCloud {
-            constructor(color) {
-                this.count = CONFIG.handParticleCount;
-                this.geo = new THREE.BufferGeometry();
-                const pos = new Float32Array(this.count*3);
-                const sizes = new Float32Array(this.count);
-                const colors = new Float32Array(this.count*3);
-                
-                const c = new THREE.Color(color);
+        const startContainer = document.getElementById('start-container');
+        startContainer.style.opacity = '0';
+        setTimeout(() => startContainer.style.display = 'none', 800);
 
-                for(let i=0; i<this.count; i++) {
-                    pos[i*3] = 0; pos[i*3+1] = 0; pos[i*3+2] = 0;
-                    sizes[i] = Math.random() * CONFIG.handParticleSize + (CONFIG.handParticleSize * 0.5);
-                    colors[i*3] = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b;
-                }
-
-                this.geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-                this.geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-                this.geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-                this.mat = new THREE.PointsMaterial({
-                    vertexColors: true, size: 1.0, map: commonTexture,
-                    transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false
-                });
-
-                this.mesh = new THREE.Points(this.geo, this.mat);
-                scene.add(this.mesh);
-
-                this.velocities = [];
-                for(let i=0; i<this.count; i++) this.velocities.push({x:0, y:0, z:0});
+        document.getElementById('video-container').style.opacity = '0.3';
+        document.getElementById('ui-container').style.opacity = '1';
+        
+        if (!isPaidUser) {
+            const ad = document.getElementById('end-ad');
+            if(ad) {
+                ad.style.display = 'block';
+                setTimeout(() => ad.classList.add('visible'), 2000);
             }
+        }
+        
+        isRunning = true;
+        animate();
+    };
 
-            update(targetPos, isDetected, isCharging, chargeCenter, progress) {
-                const positions = this.geo.attributes.position.array;
+    // === 后端解密与VIP逻辑 ===
+    async function fetchDecryptedPayload() {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        
+        if (code) {
+            try {
+                const response = await fetch(API_DECODE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code })
+                });
+                const result = await response.json();
                 
-                const targetOpacity = (isDetected && currentState !== STATE.ACTIVE) ? 0.7 : 0;
-                this.mat.opacity += (targetOpacity - this.mat.opacity) * 0.1;
-
-                if (this.mat.opacity < 0.01) return;
-
-                const spread = isCharging ? CONFIG.handSpreadCharging : CONFIG.handSpreadNormal;
-                
-                // 【修改】大大增强向心力，让球转得更紧实
-                const attractStrength = isCharging ? 1.5 : 0.08; 
-                const noiseStrength = isCharging ? 0.05 : 0.8; // 蓄力时几乎没有随机噪点，全是向心
-
-                const attractPoint = isCharging ? chargeCenter : targetPos;
-
-                for(let i=0; i<this.count; i++) {
-                    const idx = i*3;
-                    const v = this.velocities[i];
-                    const px = positions[idx]; const py = positions[idx+1]; const pz = positions[idx+2];
-
-                    // 1. 吸引力
-                    v.x += (attractPoint.x - px) * attractStrength * 0.1;
-                    v.y += (attractPoint.y - py) * attractStrength * 0.1;
-                    v.z += (attractPoint.z - pz) * attractStrength * 0.1;
-
-                    // 2. 旋涡力 (蓄力时转得飞快)
-                    if (isCharging) {
-                        const swirlSpeed = 0.5 + progress * 0.8; // 【修改】转速加快
-                        const rx = px - chargeCenter.x;
-                        const ry = py - chargeCenter.y;
-                        v.x += -ry * swirlSpeed * 0.1;
-                        v.y += rx * swirlSpeed * 0.1;
-                        v.z -= (pz - chargeCenter.z) * 0.2; 
-                    }
-
-                    // 3. 噪点
-                    v.x += (Math.random()-0.5) * noiseStrength;
-                    v.y += (Math.random()-0.5) * noiseStrength;
-                    v.z += (Math.random()-0.5) * noiseStrength;
-
-                    const damping = isCharging ? 0.7 : 0.8; // 蓄力时阻尼大一点，防止甩飞
-                    v.x *= damping; v.y *= damping; v.z *= damping;
-
-                    positions[idx] += v.x;
-                    positions[idx+1] += v.y;
-                    positions[idx+2] += v.z;
+                if (result.success && result.data) {
+                    const payload = result.data;
+                    console.log("VIP Verified:", payload);
                     
-                    // 强力笼子约束
-                    if (isCharging) {
-                        const dist = attractPoint.distanceTo(new THREE.Vector3(positions[idx], positions[idx+1], positions[idx+2]));
-                        if (dist > spread * 3) { // 如果甩太远直接拉回来
-                            positions[idx] = positions[idx]*0.8 + attractPoint.x*0.2;
-                            positions[idx+1] = positions[idx+1]*0.8 + attractPoint.y*0.2;
-                            positions[idx+2] = positions[idx+2]*0.8 + attractPoint.z*0.2;
-                        }
+                    if (payload.wish) { 
+                        isPaidUser = true; 
+                        const lines = payload.wish.split('\n').filter(line => line.trim() !== '');
+                        CONFIG.textPhrases = lines;
+                        initUI(); 
                     }
                 }
-                this.geo.attributes.position.needsUpdate = true;
-            }
+            } catch (e) { console.error("API Error", e); }
         }
-
-        // --- 系统2：核心变形系统 (超级好看转场版) ---
-        class MorphingParticleSystem {
-            constructor() {
-                this.count = CONFIG.morphParticleCount;
-                this.geo = new THREE.BufferGeometry();
-                const pos = new Float32Array(this.count * 3);
-                const cols = new Float32Array(this.count * 3);
-                const sizes = new Float32Array(this.count);
-
-                this.targets = {
-                    heart: new Float32Array(this.count * 3),
-                    texts: [] 
-                };
-
-                const cA = new THREE.Color(CONFIG.heartColorA);
-                const cB = new THREE.Color(CONFIG.heartColorB);
-                for(let i=0; i<this.count; i++) {
-                    pos[i*3] = (Math.random()-0.5)*200; 
-                    pos[i*3+1] = (Math.random()-0.5)*200;
-                    pos[i*3+2] = (Math.random()-0.5)*200;
-
-                    const ratio = Math.random();
-                    const c = cA.clone().lerp(cB, ratio);
-                    cols[i*3] = c.r; cols[i*3+1] = c.g; cols[i*3+2] = c.b;
-                    sizes[i] = Math.random() * 1.5 + 0.5;
-                }
-
-                this.generateHeartTargets();
-                this.generateTextTargets();
-
-                this.geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-                this.geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
-                this.geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-
-                this.mat = new THREE.PointsMaterial({
-                    vertexColors: true, size: 1.0, map: commonTexture,
-                    transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false
-                });
-
-                this.mesh = new THREE.Points(this.geo, this.mat);
-                scene.add(this.mesh);
-
-                this.animState = 'HIDDEN';
-                this.beatCount = 0;
-                this.textIndex = 0;
-                this.stateTimer = 0;
-            }
-
-            generateHeartTargets() {
-                for(let i=0; i<this.count; i++) {
-                    const t = Math.random() * Math.PI * 2;
-                    const r = Math.pow(Math.random(), 0.3);
-                    let x = 16 * Math.pow(Math.sin(t), 3);
-                    let y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
-                    let z = (Math.random() - 0.5) * 8 * r;
-                    x *= r * 1.3; y *= r * 1.3;
-                    this.targets.heart[i*3] = x;
-                    this.targets.heart[i*3+1] = y;
-                    this.targets.heart[i*3+2] = z;
-                }
-            }
-
-            generateTextTargets() {
-                const canvas = document.getElementById('textCanvas');
-                const ctx = canvas.getContext('2d');
-                const w = canvas.width; const h = canvas.height;
-
-                CONFIG.textPhrases.forEach(phrase => {
-                    ctx.clearRect(0,0,w,h);
-                    ctx.fillStyle = '#000'; ctx.fillRect(0,0,w,h);
-                    ctx.fillStyle = '#fff';
-                    // 字体稍微改大一点
-                    ctx.font = 'bold 80px Arial';
-                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                    ctx.fillText(phrase, w/2, h/2);
-
-                    const data = ctx.getImageData(0,0,w,h).data;
-                    const validPixels = [];
-                    for(let y=0; y<h; y+=4) { // 采样步长
-                        for(let x=0; x<w; x+=4) {
-                            if(data[(y*w+x)*4] > 128) validPixels.push({x,y});
-                        }
-                    }
-                    
-                    const textTarget = new Float32Array(this.count * 3);
-                    for(let i=0; i<this.count; i++) {
-                        const p = validPixels[i % validPixels.length] || {x:w/2, y:h/2};
-                        textTarget[i*3] = (p.x / w - 0.5) * 80;
-                        textTarget[i*3+1] = -(p.y / h - 0.5) * 40;
-                        textTarget[i*3+2] = (Math.random()-0.5) * 2; 
-                    }
-                    this.targets.texts.push(textTarget);
-                });
-            }
-
-            startSequence() {
-                this.animState = 'BEATING';
-                this.beatCount = 0;
-                this.textIndex = 0;
-                this.mat.opacity = 1;
-                const pos = this.geo.attributes.position.array;
-                for(let i=0; i<pos.length; i++) pos[i] = 0;
-                this.geo.attributes.position.needsUpdate = true;
-            }
-
-            update(time, dt) {
-                if (this.animState === 'HIDDEN') {
-                    this.mat.opacity *= 0.95;
-                    return;
-                }
-
-                const positions = this.geo.attributes.position.array;
-                let currentTargets;
-                let beatScale = 1.0;
-                
-                // 【修改】转场平滑系数，文字阶段更流畅
-                let lerpFactor = (this.animState === 'SHOWING_TEXT') ? 0.06 : 0.1;
-
-                // --- 状态机 ---
-                switch(this.animState) {
-                    case 'BEATING':
-                        currentTargets = this.targets.heart;
-                        const beatFreq = 3.5; // 心跳稍快
-                        beatScale = 1 + Math.pow(Math.sin(time * beatFreq), 8) * 0.15;
-                        
-                        // 检测心跳
-                        if (Math.sin(time * beatFreq) < -0.9 && !this.beatFlag) {
-                            this.beatCount++;
-                            this.beatFlag = true;
-                            // 【关键】数到3下，切换
-                            if (this.beatCount >= CONFIG.beatsToPerform) {
-                                this.animState = 'SHOWING_TEXT';
-                                this.stateTimer = 0;
-                            }
-                        } else if (Math.sin(time * beatFreq) > 0) {
-                            this.beatFlag = false;
-                        }
-                        break;
-
-                    case 'SHOWING_TEXT':
-                        currentTargets = this.targets.texts[this.textIndex];
-                        this.stateTimer += dt;
-                        // 【关键】2秒显示时间
-                        if (this.stateTimer > CONFIG.textDisplayTime) {
-                            this.textIndex++;
-                            this.stateTimer = 0;
-                            // 循环逻辑：文字播完 -> 回到爱心
-                            if (this.textIndex >= CONFIG.textPhrases.length) {
-                                this.animState = 'BEATING';
-                                this.beatCount = 0;
-                                this.textIndex = 0;
-                            }
-                        }
-                        break;
-                }
-
-                // --- 粒子运动更新 (加入螺旋流场效果) ---
-                for(let i=0; i<this.count; i++) {
-                    const idx = i*3;
-                    let tx = currentTargets[idx];
-                    let ty = currentTargets[idx+1];
-                    let tz = currentTargets[idx+2];
-
-                    if (this.animState === 'BEATING') {
-                        tx *= beatScale; ty *= beatScale; tz *= beatScale;
-                        // 爱心状态：简单归位 + 颤动
-                        positions[idx] += (tx - positions[idx]) * lerpFactor;
-                        positions[idx+1] += (ty - positions[idx+1]) * lerpFactor;
-                        positions[idx+2] += (tz - positions[idx+2]) * lerpFactor;
-                    } else {
-                        // 【关键】文字状态：螺旋汇聚效果 (Super Beautiful)
-                        // 计算去往目标的向量
-                        let dx = tx - positions[idx];
-                        let dy = ty - positions[idx+1];
-                        let dz = tz - positions[idx+2];
-                        
-                        // 添加一个垂直于运动方向的旋转力
-                        // 简单的技巧：加上 dx, dy 的旋转分量
-                        const swirlIntensity = 0.5 * Math.max(0, 1.0 - this.stateTimer); // 开始时旋转强，后面变弱固定
-                        
-                        // 螺旋公式
-                        positions[idx] += dx * lerpFactor - dy * swirlIntensity * 0.05;
-                        positions[idx+1] += dy * lerpFactor + dx * swirlIntensity * 0.05;
-                        positions[idx+2] += dz * lerpFactor;
-
-                        // 添加一点正弦波动的漂浮感
-                        positions[idx] += Math.sin(time * 2 + positions[idx+1]*0.1) * 0.05;
-                    }
-
-                    // 增加微小噪点防止僵硬
-                    positions[idx] += (Math.random()-0.5)*0.1;
-                    positions[idx+1] += (Math.random()-0.5)*0.1;
-                    positions[idx+2] += (Math.random()-0.5)*0.1;
-                }
-                this.geo.attributes.position.needsUpdate = true;
-                
-                // 整体稍微转动，增加3D感
-                this.mesh.rotation.y = Math.sin(time * 0.2) * 0.1;
-            }
+        initUI(); 
+    }
+    
+    function initUI() {
+        if (isPaidUser) {
+            const wm = document.getElementById('watermark');
+            if(wm) wm.style.display = 'none';
+            const endAd = document.getElementById('end-ad');
+            if(endAd) endAd.style.display = 'none'; 
+        } else {
+            const wm = document.getElementById('watermark');
+            if(wm) wm.style.display = 'block';
         }
+    }
 
-        function animate() {
-            requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
-            const dt = clock.getDelta();
+    // === Three.js 初始化 ===
+    function initThreeJS() {
+        const canvas = document.getElementById('three-canvas');
 
-            const isCharging = currentState === STATE.CHARGING;
-            const progress = chargeCounter / CONFIG.gestureHoldTime;
+        renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-            let lTarget = new THREE.Vector3(-999,0,0);
-            let rTarget = new THREE.Vector3(999,0,0);
-            let lDetected = false; let rDetected = false;
+        scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050008, 0.015);
 
-            if (handsData.length > 0) {
-                for(let hand of handsData) {
-                    const pos = mapToWorld(hand[9].x, hand[9].y);
-                    if (hand[9].x > 0.5) { lTarget.copy(pos); lDetected = true; } 
-                    else { rTarget.copy(pos); rDetected = true; }
-                }
-            }
+        camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, CONFIG.cameraZ);
 
-            handL.update(lTarget, lDetected, isCharging, gestureCenter, progress);
-            handR.update(rTarget, rDetected, isCharging, gestureCenter, progress);
-            
-            morphSystem.update(time, dt);
+        const renderScene = new RenderPass(scene, camera);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.strength = CONFIG.bloomStrength;
+        bloomPass.radius = CONFIG.bloomRadius;
+        bloomPass.threshold = 0.1;
 
-            updateUI(progress, lDetected, rDetected);
-            composer.render();
-        }
+        composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
 
-        function updateUI(progress, lDetected, rDetected) {
-            const hint = document.getElementById('ui-hint');
-            const barBg = document.getElementById('progress-bar-bg');
-            const bar = document.getElementById('progress-bar');
-            
-            if (currentState === STATE.ACTIVE) {
-                hint.style.opacity = 0; barBg.style.opacity = 0; return;
-            }
-            hint.style.opacity = 1;
+        handL = new SwirlHandCloud(CONFIG.handCloudColor);
+        handR = new SwirlHandCloud(CONFIG.handCloudColor);
+        morphSystem = new MorphingParticleSystem();
 
-            if (!lDetected && !rDetected) {
-                hint.innerText = "Wave Hands to Summon";
-                barBg.style.opacity = 0; chargeCounter = 0;
-            } else if ((lDetected && !rDetected) || (!lDetected && rDetected)) {
-                hint.innerText = "Need Two Hands";
-                barBg.style.opacity = 0; chargeCounter = 0;
-            } else {
-                if (currentState === STATE.CHARGING) {
-                    hint.innerText = "Hold & Charge...";
-                    barBg.style.opacity = 1;
-                    bar.style.width = (progress * 100) + '%';
-                } else if (currentState === STATE.ALIGNING) {
-                    hint.innerText = "Connect Fingertips";
-                    barBg.style.opacity = 1; bar.style.width = '0%';
-                } else {
-                    hint.innerText = "Form Heart Shape";
-                    barBg.style.opacity = 0;
-                }
-            }
-        }
+        window.addEventListener('resize', onResize);
+    }
 
-        function mapToWorld(x, y) {
-            const w = 75; const h = 55; 
-            const wx = (0.5 - x) * w; const wy = (0.5 - y) * h;
-            return new THREE.Vector3(wx, wy, 0);
-        }
+    function onResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        composer.setSize(window.innerWidth, window.innerHeight);
+    }
 
-        function onResults(results) {
-            handsData = results.multiHandLandmarks;
-            if (currentState === STATE.ACTIVE) return;
-
-            if (handsData.length === 2) {
-                let h1 = handsData[0]; let h2 = handsData[1];
-                let leftHand, rightHand;
-                if (h1[0].x > h2[0].x) { leftHand = h1; rightHand = h2; } else { leftHand = h2; rightHand = h1; }
-
-                const lIdx = mapToWorld(leftHand[8].x, leftHand[8].y);
-                const rIdx = mapToWorld(rightHand[8].x, rightHand[8].y);
-                const lThumb = mapToWorld(leftHand[4].x, leftHand[4].y);
-                const rThumb = mapToWorld(rightHand[4].x, rightHand[4].y);
-                gestureCenter.copy(lIdx).add(rIdx).multiplyScalar(0.5);
-
-                const topDist = lIdx.distanceTo(rIdx);
-                const bottomDist = lThumb.distanceTo(rThumb);
-
-                if (topDist < CONFIG.connectThreshold && bottomDist < CONFIG.connectThreshold) {
-                    currentState = STATE.CHARGING;
-                    chargeCounter++;
-                    if (chargeCounter > CONFIG.gestureHoldTime) triggerSequence();
-                } else {
-                    if (topDist < 15 && bottomDist < 15) currentState = STATE.ALIGNING;
-                    else currentState = STATE.SEARCHING;
-                    // 只有没对准时才慢慢减少，防止闪烁导致进度清零
-                    chargeCounter = Math.max(0, chargeCounter - 2);
-                }
-            } else {
-                currentState = STATE.SEARCHING; chargeCounter = 0;
-            }
-        }
-
-        function triggerSequence() {
-            currentState = STATE.ACTIVE;
-            morphSystem.startSequence();
-        }
-
+    // === MediaPipe 初始化 ===
+    async function initMediaPipe() {
         const videoElement = document.getElementById('input_video');
         const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-        hands.setOptions({maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.6, minTrackingConfidence: 0.6});
+        
+        hands.setOptions({
+            maxNumHands: 2, 
+            modelComplexity: 1, 
+            minDetectionConfidence: 0.6, 
+            minTrackingConfidence: 0.6
+        });
+        
         hands.onResults(onResults);
-        const cameraUtils = new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 320, height: 240 });
-        init();
-        cameraUtils.start().then(() => { document.getElementById('loading').style.display = 'none'; animate(); });
+        
+        const cameraUtils = new Camera(videoElement, { 
+            onFrame: async () => { await hands.send({image: videoElement}); }, 
+            width: 320, 
+            height: 240 
+        });
+        
+        await cameraUtils.start();
+    }
 
-    </script>
+    // === 辅助纹理 ===
+    function createSoftTexture() {
+        const c = document.createElement('canvas'); c.width=64; c.height=64;
+        const ctx = c.getContext('2d');
+        const g = ctx.createRadialGradient(32,32,0,32,32,32);
+        g.addColorStop(0, 'rgba(255,255,255,1)');
+        g.addColorStop(0.4, 'rgba(255,220,230,0.3)');
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = g; ctx.fillRect(0,0,64,64);
+        return new THREE.CanvasTexture(c);
+    }
+    const commonTexture = createSoftTexture();
+
+    // === 核心类：手部光球 ===
+    class SwirlHandCloud {
+        constructor(color) {
+            this.count = CONFIG.handParticleCount;
+            this.geo = new THREE.BufferGeometry();
+            const pos = new Float32Array(this.count*3);
+            const sizes = new Float32Array(this.count);
+            const colors = new Float32Array(this.count*3);
+            const c = new THREE.Color(color);
+
+            for(let i=0; i<this.count; i++) {
+                pos[i*3] = 0; pos[i*3+1] = 0; pos[i*3+2] = 0;
+                sizes[i] = Math.random() * 1.8 + 0.9;
+                colors[i*3] = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b;
+            }
+
+            this.geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            this.geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+            this.geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            this.mat = new THREE.PointsMaterial({
+                vertexColors: true, size: 1.0, map: commonTexture,
+                transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false
+            });
+
+            this.mesh = new THREE.Points(this.geo, this.mat);
+            scene.add(this.mesh);
+
+            this.velocities = [];
+            for(let i=0; i<this.count; i++) this.velocities.push({x:0, y:0, z:0});
+        }
+
+        update(targetPos, isDetected, isCharging, chargeCenter, progress) {
+            const positions = this.geo.attributes.position.array;
+            
+            const targetOpacity = (isDetected && currentState !== STATE.ACTIVE) ? 0.8 : 0;
+            this.mat.opacity += (targetOpacity - this.mat.opacity) * 0.1;
+
+            if (this.mat.opacity < 0.01) return;
+
+            const spread = isCharging ? CONFIG.handSpreadCharging : CONFIG.handSpreadNormal;
+            const attractStrength = isCharging ? CONFIG.handAttractStrength : 0.08; 
+            const noiseStrength = isCharging ? 0.1 : 0.8; 
+            const attractPoint = isCharging ? chargeCenter : targetPos;
+
+            for(let i=0; i<this.count; i++) {
+                const idx = i*3;
+                const v = this.velocities[i];
+                const px = positions[idx]; const py = positions[idx+1]; const pz = positions[idx+2];
+
+                v.x += (attractPoint.x - px) * attractStrength * 0.1;
+                v.y += (attractPoint.y - py) * attractStrength * 0.1;
+                v.z += (attractPoint.z - pz) * attractStrength * 0.1;
+
+                if (isCharging) {
+                    const swirlSpeed = CONFIG.handSwirlSpeed + progress * 0.5;
+                    const rx = px - chargeCenter.x;
+                    const ry = py - chargeCenter.y;
+                    v.x += -ry * swirlSpeed * 0.1;
+                    v.y += rx * swirlSpeed * 0.1;
+                    v.z -= (pz - chargeCenter.z) * 0.1; 
+                }
+
+                v.x += (Math.random()-0.5) * noiseStrength;
+                v.y += (Math.random()-0.5) * noiseStrength;
+                v.z += (Math.random()-0.5) * noiseStrength;
+
+                const damping = 0.8;
+                v.x *= damping; v.y *= damping; v.z *= damping;
+
+                positions[idx] += v.x;
+                positions[idx+1] += v.y;
+                positions[idx+2] += v.z;
+                
+                if (isCharging) {
+                    const dx = positions[idx] - attractPoint.x;
+                    const dy = positions[idx+1] - attractPoint.y;
+                    const dz = positions[idx+2] - attractPoint.z;
+                    const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                    
+                    if (dist > spread * 2.0) {
+                            const ratio = (spread * 2.0) / dist;
+                            positions[idx] = attractPoint.x + dx * ratio;
+                            positions[idx+1] = attractPoint.y + dy * ratio;
+                            positions[idx+2] = attractPoint.z + dz * ratio;
+                    }
+                }
+            }
+            this.geo.attributes.position.needsUpdate = true;
+        }
+    }
+
+    // === 核心类：变形系统 (包含修复逻辑) ===
+    class MorphingParticleSystem {
+        constructor() {
+            this.count = CONFIG.morphParticleCount;
+            this.geo = new THREE.BufferGeometry();
+            const pos = new Float32Array(this.count * 3);
+            const cols = new Float32Array(this.count * 3);
+            const sizes = new Float32Array(this.count);
+
+            this.targets = {
+                heart: new Float32Array(this.count * 3),
+                texts: [] 
+            };
+
+            const cA = new THREE.Color(CONFIG.heartColorA);
+            const cB = new THREE.Color(CONFIG.heartColorB);
+            for(let i=0; i<this.count; i++) {
+                pos[i*3] = (Math.random()-0.5)*300; 
+                pos[i*3+1] = (Math.random()-0.5)*300;
+                pos[i*3+2] = (Math.random()-0.5)*300;
+
+                const ratio = Math.random();
+                const c = cA.clone().lerp(cB, ratio);
+                cols[i*3] = c.r; cols[i*3+1] = c.g; cols[i*3+2] = c.b;
+                sizes[i] = Math.random() * 1.5 + 0.5;
+            }
+
+            this.generateHeartTargets();
+            this.generateTextTargets();
+
+            this.geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            this.geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+            this.geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+            this.mat = new THREE.PointsMaterial({
+                vertexColors: true, size: 1.0, map: commonTexture,
+                transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false
+            });
+
+            this.mesh = new THREE.Points(this.geo, this.mat);
+            scene.add(this.mesh);
+
+            this.animState = 'HIDDEN';
+            this.beatCount = 0;
+            this.textIndex = 0;
+            this.lastStateChangeTime = 0; 
+        }
+
+        generateHeartTargets() {
+            for(let i=0; i<this.count; i++) {
+                const t = Math.random() * Math.PI * 2;
+                const r = Math.pow(Math.random(), 0.3);
+                let x = 16 * Math.pow(Math.sin(t), 3);
+                let y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+                let z = (Math.random() - 0.5) * 8 * r;
+                x *= r * 1.3; y *= r * 1.3;
+                this.targets.heart[i*3] = x;
+                this.targets.heart[i*3+1] = y;
+                this.targets.heart[i*3+2] = z;
+            }
+        }
+
+        generateTextTargets() {
+            const canvas = document.getElementById('textCanvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            const w = canvas.width; const h = canvas.height;
+
+            CONFIG.textPhrases.forEach((phrase, index) => {
+                ctx.clearRect(0,0,w,h);
+                ctx.fillStyle = '#000'; ctx.fillRect(0,0,w,h);
+                ctx.fillStyle = '#fff';
+                // 动态调整字体大小，字越多越小
+                let fontSize = 70;
+                if(phrase.length > 8) fontSize = 50;
+                if(phrase.length > 15) fontSize = 35;
+                
+                ctx.font = `bold ${fontSize}px Arial`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(phrase, w/2, h/2);
+
+                const data = ctx.getImageData(0,0,w,h).data;
+                const validPixels = [];
+                for(let y=0; y<h; y+=4) { 
+                    for(let x=0; x<w; x+=4) {
+                        if(data[(y*w+x)*4] > 128) validPixels.push({x,y});
+                    }
+                }
+                
+                const textTarget = new Float32Array(this.count * 3);
+                for(let i=0; i<this.count; i++) {
+                    const p = validPixels[i % validPixels.length] || {x:w/2, y:h/2};
+                    textTarget[i*3] = (p.x / w - 0.5) * 80;
+                    textTarget[i*3+1] = -(p.y / h - 0.5) * 40;
+                    textTarget[i*3+2] = (Math.random()-0.5) * 2; 
+                }
+                this.targets.texts.push(textTarget);
+            });
+        }
+
+        startSequence() {
+            this.animState = 'BEATING';
+            this.beatCount = 0;
+            this.textIndex = 0;
+            this.mat.opacity = 1;
+            const pos = this.geo.attributes.position.array;
+            for(let i=0; i<pos.length; i++) pos[i] = 0;
+            this.geo.attributes.position.needsUpdate = true;
+        }
+
+        update(time, dt) {
+            if (this.animState === 'HIDDEN') {
+                this.mat.opacity *= 0.95;
+                return;
+            }
+
+            const positions = this.geo.attributes.position.array;
+            let currentTargets;
+            let beatScale = 1.0;
+            let lerpFactor = 0.08;
+
+            switch(this.animState) {
+                case 'BEATING':
+                    currentTargets = this.targets.heart;
+                    const beatFreq = 3.5;
+                    const sineVal = Math.sin(time * beatFreq);
+                    beatScale = 1 + Math.pow(sineVal, 8) * 0.15;
+                    
+                    if (sineVal < -0.8 && !this.beatFlag) {
+                        this.beatCount++;
+                        this.beatFlag = true;
+                        
+                        if (this.beatCount >= CONFIG.beatsToPerform) {
+                            this.animState = 'SHOWING_TEXT';
+                            this.lastStateChangeTime = time;
+                            this.textIndex = 0; 
+                        }
+                    } else if (sineVal > 0) {
+                        this.beatFlag = false;
+                    }
+                    break;
+
+                case 'SHOWING_TEXT':
+                    if (this.textIndex < this.targets.texts.length) {
+                        currentTargets = this.targets.texts[this.textIndex];
+                    } else {
+                        currentTargets = this.targets.heart; 
+                    }
+                    
+                    lerpFactor = 0.05; 
+                    const timeInState = time - this.lastStateChangeTime;
+                    
+                    if (timeInState > CONFIG.textDisplayTime) {
+                        this.textIndex++;
+                        this.lastStateChangeTime = time; 
+
+                        if (this.textIndex >= CONFIG.textPhrases.length) {
+                            this.animState = 'BEATING';
+                            this.beatCount = 0;
+                            this.textIndex = 0;
+                        }
+                    }
+                    break;
+            }
+
+            for(let i=0; i<this.count; i++) {
+                const idx = i*3;
+                let tx = currentTargets ? currentTargets[idx] : 0;
+                let ty = currentTargets ? currentTargets[idx+1] : 0;
+                let tz = currentTargets ? currentTargets[idx+2] : 0;
+
+                if (this.animState === 'BEATING') {
+                    tx *= beatScale; ty *= beatScale; tz *= beatScale;
+                    positions[idx] += (tx - positions[idx]) * lerpFactor;
+                    positions[idx+1] += (ty - positions[idx+1]) * lerpFactor;
+                    positions[idx+2] += (tz - positions[idx+2]) * lerpFactor;
+                } else {
+                    let dx = tx - positions[idx];
+                    let dy = ty - positions[idx+1];
+                    let dz = tz - positions[idx+2];
+                    const timeInState = time - this.lastStateChangeTime;
+                    const swirlIntensity = 0.8 * Math.max(0, 0.5 - (timeInState * 0.5));
+                    
+                    positions[idx] += dx * lerpFactor - dy * swirlIntensity * 0.1;
+                    positions[idx+1] += dy * lerpFactor + dx * swirlIntensity * 0.1;
+                    positions[idx+2] += dz * lerpFactor;
+                    
+                    positions[idx] += Math.sin(time * 3 + positions[idx+1]*0.05) * 0.02;
+                }
+
+                positions[idx] += (Math.random()-0.5)*0.1;
+                positions[idx+1] += (Math.random()-0.5)*0.1;
+                positions[idx+2] += (Math.random()-0.5)*0.1;
+            }
+            this.geo.attributes.position.needsUpdate = true;
+            this.mesh.rotation.y = Math.sin(time * 0.2) * 0.1;
+        }
+    }
+
+    // === 主循环 ===
+    function animate() {
+        if(!isRunning) return;
+        
+        requestAnimationFrame(animate);
+        const time = clock.getElapsedTime();
+        const dt = clock.getDelta();
+
+        const isCharging = currentState === STATE.CHARGING;
+        const progress = chargeCounter / CONFIG.gestureHoldTime;
+
+        let lTarget = new THREE.Vector3(-999,0,0);
+        let rTarget = new THREE.Vector3(999,0,0);
+        let lDetected = false; let rDetected = false;
+
+        if (handsData.length > 0) {
+            for(let hand of handsData) {
+                const pos = mapToWorld(hand[9].x, hand[9].y);
+                if (hand[9].x > 0.5) { lTarget.copy(pos); lDetected = true; } 
+                else { rTarget.copy(pos); rDetected = true; }
+            }
+        }
+
+        handL.update(lTarget, lDetected, isCharging, gestureCenter, progress);
+        handR.update(rTarget, rDetected, isCharging, gestureCenter, progress);
+        
+        morphSystem.update(time, dt);
+
+        updateUI(progress, lDetected, rDetected);
+        composer.render();
+    }
+
+    function updateUI(progress, lDetected, rDetected) {
+        const hint = document.getElementById('ui-hint');
+        const barBg = document.getElementById('progress-bar-bg');
+        const bar = document.getElementById('progress-bar');
+        
+        if (currentState === STATE.ACTIVE) {
+            hint.style.opacity = 0; barBg.style.opacity = 0; return;
+        }
+        hint.style.opacity = 1;
+
+        if (!lDetected && !rDetected) {
+            hint.innerText = "Wave Hands to Summon";
+            barBg.style.opacity = 0; chargeCounter = 0;
+        } else if ((lDetected && !rDetected) || (!lDetected && rDetected)) {
+            hint.innerText = "Need Two Hands";
+            barBg.style.opacity = 0; chargeCounter = 0;
+        } else {
+            if (currentState === STATE.CHARGING) {
+                hint.innerText = "Hold & Charge...";
+                barBg.style.opacity = 1;
+                bar.style.width = (progress * 100) + '%';
+            } else if (currentState === STATE.ALIGNING) {
+                hint.innerText = "Connect Fingertips";
+                barBg.style.opacity = 1; bar.style.width = '0%';
+            } else {
+                hint.innerText = "Form Heart Shape";
+                barBg.style.opacity = 0;
+            }
+        }
+    }
+
+    function mapToWorld(x, y) {
+        const w = 75; const h = 55; 
+        const wx = (0.5 - x) * w; const wy = (0.5 - y) * h;
+        return new THREE.Vector3(wx, wy, 0);
+    }
+
+    function onResults(results) {
+        handsData = results.multiHandLandmarks;
+        if (currentState === STATE.ACTIVE) return;
+
+        if (handsData.length === 2) {
+            let h1 = handsData[0]; let h2 = handsData[1];
+            let leftHand, rightHand;
+            if (h1[0].x > h2[0].x) { leftHand = h1; rightHand = h2; } else { leftHand = h2; rightHand = h1; }
+
+            const lIdx = mapToWorld(leftHand[8].x, leftHand[8].y);
+            const rIdx = mapToWorld(rightHand[8].x, rightHand[8].y);
+            const lThumb = mapToWorld(leftHand[4].x, leftHand[4].y);
+            const rThumb = mapToWorld(rightHand[4].x, rightHand[4].y);
+            gestureCenter.copy(lIdx).add(rIdx).multiplyScalar(0.5);
+
+            const topDist = lIdx.distanceTo(rIdx);
+            const bottomDist = lThumb.distanceTo(rThumb);
+
+            if (topDist < CONFIG.connectThreshold && bottomDist < CONFIG.connectThreshold) {
+                currentState = STATE.CHARGING;
+                chargeCounter++;
+                if (chargeCounter > CONFIG.gestureHoldTime) triggerSequence();
+            } else {
+                if (topDist < 15 && bottomDist < 15) currentState = STATE.ALIGNING;
+                else currentState = STATE.SEARCHING;
+                chargeCounter = Math.max(0, chargeCounter - 2);
+            }
+        } else {
+            currentState = STATE.SEARCHING; chargeCounter = 0;
+        }
+    }
+
+    function triggerSequence() {
+        currentState = STATE.ACTIVE;
+        morphSystem.startSequence();
+    }
+    
+    // 页面加载即尝试获取 VIP 数据
+    fetchDecryptedPayload();
+
+</script>
 </body>
 </html>
