@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Access Terminal | 2026 Cyber Gift</title>
+    
+    <style>
+        /* =========================================
+           1. 核心视觉样式 (Cyberpunk/Black Gold)
+           ========================================= */
+        :root {
+            --bg-dark: #050505;
+            --glass-bg: rgba(20, 20, 20, 0.6);
+            --glass-border: rgba(212, 175, 55, 0.2);
+            --gold-primary: #D4AF37;
+            --gold-glow: rgba(212, 175, 55, 0.5);
+            --gold-gradient: linear-gradient(135deg, #F3E5AB 0%, #D4AF37 50%, #aa8a26 100%);
+            --font-stack: 'Consolas', 'Monaco', 'Lucida Console', 'Courier New', monospace;
+            --error-red: #ff4d4d;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #e0e0e0;
+            font-family: var(--font-stack);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* 背景动效 */
+        .ambient-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.05), transparent 70%);
+        }
+        .noise-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            z-index: -1; pointer-events: none;
+        }
+
+        /* 主卡片容器 */
+        .console-card {
+            width: 90%;
+            max-width: 500px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 40px 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            text-align: center;
+            position: relative;
+            opacity: 0;
+            animation: cardEntry 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            margin: 20px 0;
+        }
+        @keyframes cardEntry { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+        .console-header {
+            color: var(--gold-primary); font-size: 1.6rem; margin-bottom: 8px; font-weight: bold; letter-spacing: 2px;
+            text-shadow: 0 0 15px var(--gold-glow);
+        }
+        .console-sub {
+            font-size: 0.75rem; color: #888; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 3px;
+            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; display: inline-block;
+        }
+
+        /* 表单与输入框 */
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.5s forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .input-group { position: relative; margin-bottom: 20px; text-align: left; }
+        .input-label { font-size: 0.7rem; color: var(--gold-primary); opacity: 0.8; margin-bottom: 8px; display: block; letter-spacing: 1px; }
+
+        .access-input {
+            width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px; padding: 12px; font-family: var(--font-stack); font-size: 1.1rem;
+            color: #fff; text-align: center; letter-spacing: 2px; outline: none; transition: all 0.3s;
+        }
+        .access-input:focus { border-color: var(--gold-primary); background: rgba(0,0,0,0.5); box-shadow: 0 0 10px rgba(212, 175, 55, 0.2); }
+        .step-2-input { text-align: left; padding-left: 15px; letter-spacing: 1px; }
+
+        /* 针对 textarea 的新样式 */
+        textarea.access-input { 
+            height: 120px;       /* 设置高度，让框变大 */ 
+            resize: none;        /* 禁止用户拖动调整大小 */ 
+            line-height: 1.6;    /* 设置行高，文字不拥挤 */ 
+            padding: 15px;       /* 增加内边距 */ 
+            overflow-y: auto;    /* 内容多了显示滚动条 */ 
+            display: block;      /* 块级显示 */ 
+            white-space: pre-wrap; /* 保留换行符 */ 
+        } 
+
+        /* 针对 placeholder (提示文字) 的垂直居中调整 */ 
+        textarea.access-input::placeholder { 
+            line-height: 1.6; 
+            padding-top: 5px; 
+        }
+
+        /* 礼物选择网格 */
+        .gift-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .gift-option {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .gift-option:hover { background: rgba(255, 255, 255, 0.1); transform: translateY(-2px); }
+        .gift-option.selected {
+            border-color: var(--gold-primary);
+            background: rgba(212, 175, 55, 0.1);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
+        }
+        .gift-icon { font-size: 1.8rem; margin-bottom: 8px; display: block; }
+        .gift-name { font-size: 0.7rem; color: #aaa; letter-spacing: 1px; font-weight: bold; }
+        .gift-option.selected .gift-name { color: var(--gold-primary); }
+
+        /* 按钮样式 */
+        .verify-btn {
+            width: 100%; padding: 16px; background: var(--gold-gradient); border: none; border-radius: 4px;
+            color: #050505; font-family: var(--font-stack); font-weight: bold; font-size: 1rem;
+            letter-spacing: 2px; cursor: pointer; transition: all 0.3s; text-transform: uppercase;
+        }
+        .verify-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(212, 175, 55, 0.4); }
+        .verify-btn:disabled { opacity: 0.6; cursor: not-allowed; filter: grayscale(0.8); }
+
+        /* =========================================
+           2. 新增：结果展示与复制区样式
+           ========================================= */
+        #result-area {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px dashed var(--gold-primary);
+            padding: 20px;
+            margin-top: 25px;
+            border-radius: 8px;
+            animation: fadeIn 0.5s forwards;
+            position: relative;
+        }
+        
+        .result-title {
+            color: #fff; margin-bottom: 12px; font-weight: bold; letter-spacing: 1px; font-size: 0.9rem;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .url-box {
+            word-break: break-all;
+            color: #888;
+            font-size: 11px;
+            margin-bottom: 15px;
+            font-family: monospace;
+            background: rgba(0,0,0,0.3);
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+            user-select: all; /* 方便用户全选 */
+            text-align: left;
+        }
+
+        .copy-btn {
+            background: transparent;
+            border: 1px solid var(--gold-primary);
+            color: var(--gold-primary);
+            padding: 12px;
+            width: 100%;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: var(--font-stack);
+            font-weight: bold;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .copy-btn:hover { background: rgba(212, 175, 55, 0.1); }
+        
+        .copy-btn.success {
+            background: var(--gold-primary);
+            color: #000;
+            border-color: var(--gold-primary);
+        }
+
+        .direct-link {
+            display: block; margin-top: 15px; color: #555; font-size: 11px; text-decoration: none; transition: color 0.3s;
+        }
+        .direct-link:hover { color: var(--gold-primary); text-decoration: underline; }
+
+        /* 辅助样式 */
+        .text-error { color: var(--error-red) !important; }
+        .shake-animation { animation: shake 0.4s ease-in-out; border-color: var(--error-red) !important; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+        
+        .loader { display: inline-block; width: 14px; height: 14px; border: 2px solid #000; border-radius: 50%; border-top-color: transparent; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: text-bottom; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .back-link { display: block; margin-top: 30px; color: #666; text-decoration: none; font-size: 0.7rem; transition: color 0.3s; letter-spacing: 1px; }
+        .back-link:hover { color: var(--gold-primary); }
+
+        .status-msg { height: 20px; font-size: 0.75rem; margin-bottom: 20px; color: var(--gold-primary); letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-bg"></div>
+    <div class="noise-overlay"></div>
+
+    <div class="console-card">
+        <div class="console-header">CYBER GIFT 2026</div>
+        <div class="console-sub">SECURE ACCESS TERMINAL</div>
+
+        <div id="step1" class="form-section">
+            <div class="input-group">
+                <input type="text" id="keyCode" class="access-input" placeholder="ENTER ACCESS KEY" autocomplete="off" maxlength="30">
+            </div>
+            <div class="status-msg" id="status1">_WAITING FOR SIGNAL...</div>
+            <button id="btnStep1" class="verify-btn">
+                <span class="btn-text">CONNECT TO SERVER</span>
+            </button>
+        </div>
+
+        <div id="step2" class="form-section hidden">
+            
+            <div class="input-group">
+                <label class="input-label" style="text-align: center; margin-bottom: 15px;">SELECT VISUALIZATION PROTOCOL</label>
+                <div class="gift-grid">
+                    <div class="gift-option selected" onclick="selectGift('stars')">
+                        <span class="gift-icon">🌌</span><span class="gift-name">GALAXY</span>
+                    </div>
+                    <div class="gift-option" onclick="selectGift('firework')">
+                        <span class="gift-icon">🎆</span><span class="gift-name">FIREWORK</span>
+                    </div>
+                    <div class="gift-option" onclick="selectGift('love')">
+                        <span class="gift-icon">❤️</span><span class="gift-name">BUNDLE</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">IDENTITY DESIGNATION (NAME)</label>
+                <input type="text" id="inputName" class="access-input step-2-input" placeholder="e.g. Alice" maxlength="20">
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">ENCODED MESSAGE (WISH)</label>
+                <textarea id="inputWish" class="access-input step-2-input" placeholder="e.g. Happy New Year!&#10;May all your dreams come true.&#10;Love you forever." maxlength="200"></textarea>
+            </div>
+
+            <div class="status-msg" id="status2">_READY TO INITIALIZE</div>
+
+            <button id="btnStep2" class="verify-btn">
+                <span class="btn-text">GENERATE UNIVERSE</span>
+            </button>
+
+            <div id="result-area" class="hidden">
+                <div class="result-title">
+                    <span>UNIVERSE CREATED</span>
+                    <span style="color:#0f0; font-size:10px;">● ONLINE</span>
+                </div>
+                
+                <div id="generatedUrl" class="url-box">Generating...</div>
+                
+                <button id="btnCopy" class="copy-btn" onclick="copyToClipboard()">
+                    <span id="copyIcon">📋</span> 
+                    <span id="copyText">COPY LINK</span>
+                </button>
+                
+                <a id="btnDirect" href="#" target="_blank" class="direct-link">Open Directly &gt;</a>
+            </div>
+
+        </div>
+
+        <a href="index.html" class="back-link">&lt; TERMINATE SESSION</a>
+    </div>
+
+    <script>
+        // ================= 配置区域 =================
+        const API_BASE = "https://vimalin.xyz:8443/api";
+        
+        const GIFT_URLS = {
+            'stars': "https://cybergift.store/stars/",
+            'firework': "https://cybergift.store/fireworks/",
+            'love': "https://cybergift.store/love/"
+        };
+        // ===========================================
+
+        let currentCode = "";
+        let selectedType = "stars";
+        let finalLink = "";
+
+        const UI = {
+            step1: document.getElementById('step1'),
+            step2: document.getElementById('step2'),
+            inputCode: document.getElementById('keyCode'),
+            inputName: document.getElementById('inputName'),
+            inputWish: document.getElementById('inputWish'),
+            btn1: document.getElementById('btnStep1'),
+            btn2: document.getElementById('btnStep2'),
+            status1: document.getElementById('status1'),
+            status2: document.getElementById('status2'),
+            options: document.querySelectorAll('.gift-option'),
+            resultArea: document.getElementById('result-area'),
+            generatedUrl: document.getElementById('generatedUrl'),
+            btnCopy: document.getElementById('btnCopy'),
+            btnDirect: document.getElementById('btnDirect'),
+            copyText: document.getElementById('copyText'),
+            copyIcon: document.getElementById('copyIcon')
+        };
+
+        // --- 事件绑定 ---
+        UI.btn1.addEventListener('click', verifyCode);
+        UI.inputCode.addEventListener('keypress', (e) => { if(e.key === 'Enter') verifyCode(); });
+        UI.inputCode.addEventListener('input', () => resetStatus(UI.inputCode, UI.status1, "_WAITING FOR SIGNAL..."));
+        
+        // 绑定生成事件
+        UI.btn2.addEventListener('click', finalizeGift);
+        UI.inputWish.addEventListener('keypress', (e) => { if(e.key === 'Enter') finalizeGift(); });
+
+        // --- 逻辑 Step 1: 验证 ---
+        async function verifyCode() {
+            const code = UI.inputCode.value.trim();
+            if (!code) return triggerError(UI.inputCode, UI.status1, "ERROR: INPUT EMPTY");
+
+            setLoading(UI.btn1, true, "VERIFYING...");
+
+            try {
+                const response = await fetch(`${API_BASE}/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.valid) {
+                    currentCode = code;
+                    transitionToStep2();
+                } else {
+                    triggerError(UI.inputCode, UI.status1, (data.message || "ACCESS DENIED").toUpperCase());
+                }
+            } catch (error) {
+                console.error(error);
+                triggerError(UI.inputCode, UI.status1, "CONNECTION FAILURE");
+            } finally {
+                setLoading(UI.btn1, false, "CONNECT TO SERVER");
+            }
+        }
+
+        // --- 逻辑 Step 2: 核销与生成 ---
+        async function finalizeGift() {
+            const name = UI.inputName.value.trim() || "Traveler";
+            const wish = UI.inputWish.value.trim() || "Best Wishes";
+
+            setLoading(UI.btn2, true, "ENCRYPTING DATA...");
+
+            try {
+                const payload = {
+                    code: currentCode,
+                    payload: { name: name, wish: wish }
+                };
+
+                const response = await fetch(`${API_BASE}/finalize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // 1. 获取加密串
+                    const encryptedCode = data.encryptedCode;
+                    
+                    // 2. 拼接链接
+                    let targetBaseUrl = GIFT_URLS[selectedType];
+                    const connector = targetBaseUrl.includes("?") ? "&" : "?";
+                    finalLink = `${targetBaseUrl}${connector}code=${encryptedCode}`;
+
+                    // 3. 界面切换
+                    UI.btn2.classList.add('hidden'); // 隐藏生成按钮
+                    UI.resultArea.classList.remove('hidden'); // 显示结果区
+                    
+                    // 4. 填充结果
+                    UI.generatedUrl.innerText = finalLink;
+                    UI.btnDirect.href = finalLink;
+                    UI.status2.innerText = "_GENERATION COMPLETE";
+                    
+                    // 5. 自动尝试复制
+                    copyToClipboard(true);
+
+                } else {
+                    UI.status2.classList.add('text-error');
+                    UI.status2.innerText = "ERROR: " + data.message;
+                    setLoading(UI.btn2, false, "RETRY GENERATION");
+                }
+            } catch (error) {
+                UI.status2.classList.add('text-error');
+                UI.status2.innerText = "SYSTEM FAILURE";
+                setLoading(UI.btn2, false, "RETRY GENERATION");
+            }
+        }
+
+        // --- 复制功能 ---
+        function copyToClipboard(isAuto = false) {
+            if (!finalLink) return;
+
+            navigator.clipboard.writeText(finalLink).then(() => {
+                // 成功反馈
+                UI.btnCopy.classList.add('success');
+                UI.copyText.innerText = "COPIED SUCCESSFULLY";
+                UI.copyIcon.innerText = "✓";
+                
+                // 2秒后恢复按钮状态
+                setTimeout(() => {
+                    UI.btnCopy.classList.remove('success');
+                    UI.copyText.innerText = "COPY LINK";
+                    UI.copyIcon.innerText = "📋";
+                }, 2000);
+            }).catch(err => {
+                if (!isAuto) alert("Auto-copy failed. Please copy the link manually.");
+            });
+        }
+
+        // --- 辅助函数 ---
+        window.selectGift = function(type) {
+            selectedType = type;
+            UI.options.forEach(opt => opt.classList.remove('selected'));
+            // 这里简单遍历匹配，实际可用 data-type 属性更优雅
+            if(type==='stars') UI.options[0].classList.add('selected');
+            if(type==='firework') UI.options[1].classList.add('selected');
+            if(type==='love') UI.options[2].classList.add('selected');
+            UI.status2.innerText = `_TARGET LOCKED: ${type.toUpperCase()}`;
+        };
+
+        function transitionToStep2() {
+            UI.step1.classList.add('hidden');
+            UI.step2.classList.remove('hidden');
+            UI.step2.classList.add('fade-in');
+            setTimeout(() => UI.inputName.focus(), 500);
+        }
+
+        function setLoading(btn, isLoading, text) {
+            const span = btn.querySelector('.btn-text');
+            if (isLoading) {
+                btn.disabled = true;
+                span.innerHTML = `<span class="loader"></span> ${text}`;
+            } else {
+                btn.disabled = false;
+                span.innerText = text;
+            }
+        }
+
+        function triggerError(input, statusEl, msg) {
+            input.classList.add('shake-animation');
+            input.focus();
+            statusEl.classList.add('text-error');
+            statusEl.innerText = msg;
+            if (navigator.vibrate) navigator.vibrate(200);
+            setTimeout(() => input.classList.remove('shake-animation'), 500);
+        }
+
+        function resetStatus(input, statusEl, defaultMsg) {
+            statusEl.classList.remove('text-error');
+            statusEl.innerText = defaultMsg;
+        }
+    </script>
+</body>
+</html>

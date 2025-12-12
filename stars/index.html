@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>2026 专属祝福</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
     <style>
         body {
@@ -76,7 +75,7 @@
         }
         #overlay:hover::before { opacity: 1; }
 
-        /* === 启动页下方版权小字 (全版本显示) === */
+        /* === 启动页下方版权小字 === */
         #start-subtext {
             margin-top: 15px;
             font-size: 10px;
@@ -110,7 +109,7 @@
         /* === 结束后的彩蛋广告 (仅免费版显示) === */
         #end-ad {
             position: absolute;
-            bottom: 40px; right: 30px; /* 放在右下角，不遮挡中心 */
+            bottom: 40px; right: 30px; 
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(5px);
             padding: 10px 20px;
@@ -130,29 +129,27 @@
         
         #end-ad:hover {
             background: rgba(255, 255, 255, 0.2);
-            transform: translateY(20px) scale(1.05); /* 保持Y轴偏移 */
+            transform: translateY(20px) scale(1.05);
             box-shadow: 0 5px 25px rgba(100, 200, 255, 0.3);
         }
         
-        /* 移动端适配：广告位置调整 */
+        /* 移动端适配 */
         @media (max-width: 768px) {
             #end-ad {
                 bottom: 30px;
                 right: 50%;
-                transform: translateX(50%) translateY(20px); /* 居中 */
+                transform: translateX(50%) translateY(20px);
                 width: max-content;
             }
             #end-ad:hover {
                 transform: translateX(50%) translateY(20px) scale(1.05);
             }
-            /* 激活状态的类，用于JS控制弹出 */
             #end-ad.visible {
                 opacity: 1;
                 transform: translateX(50%) translateY(0) !important;
             }
         }
         
-        /* PC端激活状态 */
         @media (min-width: 769px) {
             #end-ad.visible {
                 opacity: 1;
@@ -180,19 +177,15 @@
 </div>
 
 <script>
-    // === V33.0 商业闭环·无感植入版 ===
+    // === V34.0 后端解密版 (适配 Python Server) ===
     
-    // 配置跳转链接 (网站主页/上级目录)
-    const BUY_LINK = "../#buy"; // 根据你的目录结构修改，例如 "./" 或 "https://..."
-    const BRAND_NAME = "七叶怀瑾";
-
-    const SECRET_CONFIG = {
-        key: "MY_SECRET_KEY_2026", 
-        prefix: "VERIFY:"
-    };
+    // 配置跳转链接
+    const BUY_LINK = "../#buy"; 
+    // 后端解密接口地址 (请确保与你的 server.py 端口一致)
+    const API_DECODE_URL = "https://vimalin.xyz:8443/api/decode"; 
 
     let config = {
-        // === 默认免费版内容 (纯净祝福，无广告粒子) ===
+        // === 默认免费版内容 ===
         textList: [
             "3", "2", "1", 
             "2026", 
@@ -240,50 +233,98 @@
         btn.style.setProperty('--y', y + 'px');
     }
 
-    // === 自动解密与权限判断 ===
-    function autoDecrypt() {
+    // === 【核心修改】通过 API 获取解密数据 ===
+    async function fetchDecryptedPayload() {
         const params = new URLSearchParams(window.location.search);
-        const encryptedCode = params.get('code'); 
+        const code = params.get('code');
         
-        if (encryptedCode) {
+        if (code) {
             try {
-                const bytes = CryptoJS.AES.decrypt(encryptedCode, SECRET_CONFIG.key);
-                const decryptedStr = bytes.toString(CryptoJS.enc.Utf8);
-                if (decryptedStr.startsWith(SECRET_CONFIG.prefix)) {
-                    const content = decryptedStr.replace(SECRET_CONFIG.prefix, '');
-                    const customerList = content.split(/[,，]/).filter(t => t.trim() !== '');
-                    if (customerList.length > 0) {
-                        // === 付费版逻辑 ===
-                        isPaidUser = true;
+                // 向后端发起请求，让后端解密
+                const response = await fetch(API_DECODE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    const payload = result.data;
+                    console.log("Verified Gift:", payload);
+                    
+                    // === 只有后端解密成功，才显示定制内容 === 
+                    if (payload.name || payload.wish) { 
+                        isPaidUser = true; // 标记为付费用户 
                         
-                        // 强制加上倒计时
-                        config.textList = ["3", "2", "1", ...customerList];
-                        config.textDuration = config.textList.map(text => {
-                            if (/^\d+$/.test(text) && text.length < 3) return 1500;
-                            return 3000;
-                        });
-                        console.log("VIP Mode Activated");
+                        // 1. 构建基础播放列表 (倒计时) 
+                        let newTextList = ["3", "2", "1"]; 
+                        
+                        // 2. 插入名字 
+                        if(payload.name) { 
+                            newTextList.push(payload.name); 
+                        } 
+                        
+                        // 3. 插入 2026 (固定年份) 
+                        newTextList.push("2026"); 
+                        
+                        // 4. 【核心修改】处理多行祝福语 
+                        if(payload.wish) { 
+                            // 按回车符 (\n) 分割，并过滤掉空行 
+                            const lines = payload.wish.split('\n').filter(line => line.trim() !== ''); 
+                            // 把分割后的每一句都加到播放列表里 
+                            newTextList.push(...lines); 
+                        } 
+                        
+                        config.textList = newTextList; 
+                        
+                        // 5. 重新计算每句话的播放时长 
+                        config.textDuration = newTextList.map(text => { 
+                            // 如果是纯数字且很短(倒计时)，播放 1.5秒 
+                            if (/^\d+$/.test(text) && text.length < 3) return 1500; 
+                            // 其他文字播放 3.5秒 
+                            return 3500; 
+                        }); 
+
+                        // 刷新 UI 状态 
+                        initUI(); 
                     }
                 }
-            } catch (e) { console.log("Decryption Failed, using Free Mode"); }
+            } catch (e) {
+                console.error("API Error:", e);
+                // 如果出错（比如断网），维持免费版配置
+            }
         }
     }
-    autoDecrypt();
+    
+    // 立即执行获取
+    fetchDecryptedPayload();
 
     // === UI 初始化逻辑 ===
     function initUI() {
         if (isPaidUser) {
-            // 付费版：移除水印，移除结尾广告
+            // 付费版：移除水印，移除结尾广告，移除启动页的“Powered By”
             const wm = document.getElementById('watermark');
-            if(wm) wm.remove();
+            if(wm) wm.style.display = 'none';
+            
+            // const endAd = document.getElementById('end-ad');
+            // if(endAd) endAd.style.display = 'none';
+
+            // const subtext = document.getElementById('start-subtext');
+            // if(subtext) subtext.style.display = 'none'; // 甚至可以连启动页下方的版权也隐藏，看你需求
             const endAd = document.getElementById('end-ad');
-            if(endAd) endAd.remove();
+            if(endAd) endAd.style.display = 'block';
+            console.log("UI Cleaned for VIP");
         } else {
             // 免费版：显示水印，准备结尾广告
-            document.getElementById('watermark').style.display = 'block';
-            document.getElementById('end-ad').style.display = 'block'; // 只是存在，opacity还是0
+            const wm = document.getElementById('watermark');
+            if(wm) wm.style.display = 'block';
+            
+            const endAd = document.getElementById('end-ad');
+            if(endAd) endAd.style.display = 'block';
         }
     }
+    // 页面加载时先执行一次（默认免费状态）
     initUI();
 
     const world = document.getElementById('world');
@@ -313,7 +354,7 @@
         const screenW = window.innerWidth;
         const screenH = window.innerHeight;
 
-        // 强制横屏逻辑 (保持不变)
+        // 强制横屏逻辑
         if (screenW < screenH) {
             isMobile = true;
             world.style.width = screenH + 'px';
@@ -334,24 +375,14 @@
             height = screenH;
         }
 
-        // === 核心修复：高清屏 (Retina) 适配 ===
-        // 1. 获取设备像素比 (dpr)，普通屏是1，手机通常是2或3
+        // 高清屏适配
         const dpr = window.devicePixelRatio || 1;
-        
-        // 2. 设置 Canvas 的物理分辨率 (实际像素 = 逻辑像素 * dpr)
         canvas.width = width * dpr;
         canvas.height = height * dpr;
-        
-        // 3. 强制固定 CSS 显示尺寸 (保持逻辑尺寸不变，防止画布变大)
         canvas.style.width = width + 'px';
         canvas.style.height = height + 'px';
-        
-        // 4. 缩放绘图上下文
-        // 这样后续所有的绘图指令（如画圆、画方块）都会自动应用这个缩放
-        // 从而在代码逻辑坐标不变的情况下，绘制出高清细腻的图像
         ctx.scale(dpr, dpr);
 
-        // 下面是原有的参数配置 (保持不变)
         const minDim = Math.min(width, height);
         config.nebulaRadiusBase = minDim * 0.35; 
         config.ringInnerBase = minDim * 0.45;
@@ -558,17 +589,13 @@
     }
 
     function getTextCoordinates(text) {
-        if (text === "QR_CODE") {
-            return getQRCoordinates(AD_CONFIG.qrContent);
-        }
-
         const tempCanvas = document.createElement('canvas');
         const tempCtx = tempCanvas.getContext('2d');
         tempCanvas.width = width;
         tempCanvas.height = height;
         
         let fontSize = Math.min(width, height) * 0.18; 
-        if (isMobile) fontSize *= 1.4; // 保持手机端大字体
+        if (isMobile) fontSize *= 1.4; 
 
         if (text.length > 8) fontSize *= 0.5;
         else if (text.length > 4) fontSize *= 0.6;
@@ -584,18 +611,12 @@
         const data = imageData.data;
         const coords = [];
         
-        // === 保持 gap 不变 ===
-        // 手机端 gap 依然是 2，保证极高的物理分辨率
         const gap = isMobile ? 3 : 4; 
         
         for (let y = 0; y < height; y += gap) {
             for (let x = 0; x < width; x += gap) {
                 if (data[(y * width + x) * 4 + 3] > 180) {
-                    // === 【修改点】随机采样 ===
-                    // 如果是手机端，随机丢弃 40% 的粒子，只保留 60%
-                    // 这样既维持了 gap=2 的精细骨架，又降低了密度
                     if (isMobile && Math.random() > 1.0) continue;
-
                     coords.push({ x: x, y: y });
                 }
             }
@@ -604,18 +625,16 @@
     }
 
     function switchText(index) {
-        // === 循环逻辑 ===
         if (index >= config.textList.length) {
-            // 跳过前3个倒计时 (0,1,2)，从索引3开始循环
             currentTextIndex = 3; 
             index = 3;
             
-            // 免费版：只有在一轮播放结束(开始循环)时，才显示广告
-            if (!isPaidUser && !hasShownAd) {
+            // 免费版：广告显示逻辑
+            if (!hasShownAd) {
                 const ad = document.getElementById('end-ad');
                 if(ad) {
-                    ad.style.display = 'block'; // 确保display block
-                    setTimeout(() => ad.classList.add('visible'), 100); // 触发CSS transition
+                    ad.style.display = 'block'; 
+                    setTimeout(() => ad.classList.add('visible'), 100); 
                 }
                 hasShownAd = true;
             }

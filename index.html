@@ -439,7 +439,48 @@
 
     <div class="ambient-bg"></div>
     <div class="noise-overlay"></div>
+    <a href="redeem.html" class="terminal-entry-btn">
+    <span class="icon">⚡</span>
+    <span class="text">兑换码入口 REDDEM KEY</span>
+</a>
 
+<style>
+    /* 将此样式添加到 index.html 的 <style> 中 */
+    .terminal-entry-btn {
+        position: fixed;
+        top: 25px;
+        right: 25px;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 20px;
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid var(--gold-primary);
+        border-radius: 50px;
+        color: var(--gold-primary);
+        text-decoration: none;
+        font-family: var(--font-body);
+        font-size: 0.8rem;
+        letter-spacing: 0.1em;
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+        box-shadow: 0 0 15px rgba(212, 175, 55, 0.1);
+    }
+
+    .terminal-entry-btn:hover {
+        background: var(--gold-primary);
+        color: #000;
+        box-shadow: 0 0 30px rgba(212, 175, 55, 0.4);
+        transform: translateY(-2px);
+    }
+    
+    .terminal-entry-btn .icon {
+        animation: blink 2s infinite;
+    }
+
+    @keyframes blink { 50% { opacity: 0.5; } }
+</style>
     <div class="container">
         <header class="hero">
             <h1>CYBER GIFT 2026</h1>
@@ -504,15 +545,15 @@
                         <span>¥ 6.99 / 人</span>
                     </li>
                     <li class="price-item highlight">
-                        <span>All-in Bundle / 全套打包</span>
-                        <span>¥ 18.88</span>
+                        <span>All-in Bundle / 三人及以上六折</span>
+                        <span>¥ 5.99 / 人</span>
                     </li>
                 </ul>
 
                 <button class="contact-btn" onclick="copyWeChat()">
-                    点击复制微信号定制
+                    扫码或点击 进入闲鱼购买兑换码
                 </button>
-                <p class="sub-note">扫码备注【定制】，24小时在线接单</p>
+                <p class="sub-note">扫码购买兑换码，24小时自动发货</p>
             </div>
         </section>
 
@@ -544,18 +585,18 @@
 
         // 复制微信号功能
         function copyWeChat() {
-            const wechatId = "qiyehuaijin";
+            const wechatId = "https://m.tb.cn/h.7c2bDUb?tk=pTHEftQbSrY";
             if(navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(wechatId).then(() => {
-                    showToast("微信号已复制，请前往微信添加");
-                }).catch(() => showToast("复制失败: qiyehuaijin"));
+                    showToast("闲鱼链接已复制，请粘贴到浏览器或打开闲鱼APP访问");
+                }).catch(() => showToast("复制失败: https://m.tb.cn/h.7c2bDUb?tk=pTHEftQbSrY"));
             } else {
                 // 兼容旧浏览器
                 const textArea = document.createElement("textarea");
                 textArea.value = wechatId;
                 document.body.appendChild(textArea);
                 textArea.select();
-                try { document.execCommand('copy'); showToast("微信号已复制"); } 
+                try { document.execCommand('copy'); showToast("闲鱼链接已复制"); } 
                 catch (err) { alert("复制失败，请手动添加: " + wechatId); }
                 document.body.removeChild(textArea);
             }
