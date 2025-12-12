@@ -313,6 +313,7 @@
         const screenW = window.innerWidth;
         const screenH = window.innerHeight;
 
+        // 强制横屏逻辑 (保持不变)
         if (screenW < screenH) {
             isMobile = true;
             world.style.width = screenH + 'px';
@@ -333,9 +334,24 @@
             height = screenH;
         }
 
-        canvas.width = width;
-        canvas.height = height;
+        // === 核心修复：高清屏 (Retina) 适配 ===
+        // 1. 获取设备像素比 (dpr)，普通屏是1，手机通常是2或3
+        const dpr = window.devicePixelRatio || 1;
+        
+        // 2. 设置 Canvas 的物理分辨率 (实际像素 = 逻辑像素 * dpr)
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        
+        // 3. 强制固定 CSS 显示尺寸 (保持逻辑尺寸不变，防止画布变大)
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+        
+        // 4. 缩放绘图上下文
+        // 这样后续所有的绘图指令（如画圆、画方块）都会自动应用这个缩放
+        // 从而在代码逻辑坐标不变的情况下，绘制出高清细腻的图像
+        ctx.scale(dpr, dpr);
 
+        // 下面是原有的参数配置 (保持不变)
         const minDim = Math.min(width, height);
         config.nebulaRadiusBase = minDim * 0.35; 
         config.ringInnerBase = minDim * 0.45;
@@ -570,7 +586,7 @@
         
         // === 保持 gap 不变 ===
         // 手机端 gap 依然是 2，保证极高的物理分辨率
-        const gap = isMobile ? 2 : 4; 
+        const gap = isMobile ? 3 : 4; 
         
         for (let y = 0; y < height; y += gap) {
             for (let x = 0; x < width; x += gap) {
@@ -578,7 +594,7 @@
                     // === 【修改点】随机采样 ===
                     // 如果是手机端，随机丢弃 40% 的粒子，只保留 60%
                     // 这样既维持了 gap=2 的精细骨架，又降低了密度
-                    if (isMobile && Math.random() > 0.3) continue;
+                    if (isMobile && Math.random() > 1.0) continue;
 
                     coords.push({ x: x, y: y });
                 }
