@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Access Terminal | 2026 Cyber Gift</title>
-    
+        <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
+
     <style>
         /* =========================================
            1. 核心视觉样式 (Cyberpunk/Black Gold)
@@ -111,7 +112,7 @@
         /* 礼物选择网格 */
         .gift-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr;
             gap: 10px;
             margin-bottom: 25px;
         }
@@ -253,7 +254,10 @@
                         <span class="gift-icon">🎆</span><span class="gift-name">FIREWORK</span>
                     </div>
                     <div class="gift-option" onclick="selectGift('love')">
-                        <span class="gift-icon">❤️</span><span class="gift-name">BUNDLE</span>
+                        <span class="gift-icon">❤️</span><span class="gift-name">LOVE</span>
+                    </div>
+                    <div class="gift-option" onclick="selectGift('portal')">
+                        <span class="gift-icon">🔯</span><span class="gift-name">PORTAL</span>
                     </div>
                 </div>
             </div>
@@ -302,7 +306,8 @@
         const GIFT_URLS = {
             'stars': "https://cybergift.store/stars/",
             'firework': "https://cybergift.store/fireworks/",
-            'love': "https://cybergift.store/love/"
+            'love': "https://cybergift.store/love/",
+            'portal': "https://cybergift.store/magicframe/"
         };
         // ===========================================
 
@@ -451,6 +456,8 @@
             if(type==='stars') UI.options[0].classList.add('selected');
             if(type==='firework') UI.options[1].classList.add('selected');
             if(type==='love') UI.options[2].classList.add('selected');
+            // 新增：处理法阵选项
+            if(type==='portal') UI.options[3].classList.add('selected');
             UI.status2.innerText = `_TARGET LOCKED: ${type.toUpperCase()}`;
         };
 

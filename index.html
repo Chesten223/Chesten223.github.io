@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>2026 Cyber Gift | Digital Vows</title>
     
+    <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Noto+Serif+SC:wght@300;500;700&display=swap" rel="stylesheet">
@@ -27,7 +28,7 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        html { scroll-behavior: smooth; } /* 启用平滑滚动 */
+        html { scroll-behavior: smooth; }
 
         body {
             background-color: var(--bg-dark);
@@ -39,7 +40,7 @@
             position: relative;
         }
 
-        /* --- 1. 背景效果 (保持不变) --- */
+        /* --- 1. 背景效果 --- */
         .ambient-bg {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -71,7 +72,7 @@
             padding: 0 20px;
         }
 
-        /* --- 3. Hero Section (保持不变) --- */
+        /* --- 3. Hero Section (增强版) --- */
         .hero {
             height: 80vh;
             display: flex;
@@ -80,7 +81,21 @@
             align-items: center;
             text-align: center;
             position: relative;
+            /* 关键：确保内部绝对定位元素以 hero 为基准 */
+            overflow: hidden; 
             animation: fadeIn 1.5s ease-out forwards;
+        }
+
+        /* 新增：Canvas 粒子背景样式 */
+        #heroCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* 位于文字下方 */
+            pointer-events: none; /* 让鼠标事件穿透到文字 */
+            opacity: 0.6; /* 控制整体粒子亮度，不喧宾夺主 */
         }
 
         .hero h1 {
@@ -93,6 +108,7 @@
             -webkit-text-fill-color: transparent;
             margin-bottom: 1rem;
             text-shadow: 0 10px 30px rgba(212, 175, 55, 0.2);
+            z-index: 1; /* 确保文字在粒子之上 */
         }
 
         .hero p {
@@ -102,6 +118,7 @@
             text-transform: uppercase;
             position: relative;
             display: inline-block;
+            z-index: 1;
         }
 
         .hero p::after {
@@ -121,9 +138,10 @@
             color: var(--text-muted);
             opacity: 0.6;
             animation: bounce 2s infinite;
+            z-index: 1;
         }
 
-        /* --- 4. 卡片样式 (保持不变) --- */
+        /* --- 4. 卡片样式 --- */
         .glass-panel {
             background: var(--glass-bg);
             backdrop-filter: blur(var(--blur-amount));
@@ -140,7 +158,7 @@
             box-shadow: 0 15px 40px 0 rgba(0, 0, 0, 0.5), 0 0 20px rgba(212, 175, 55, 0.1);
         }
 
-        /* --- 5. 产品橱窗 (保持不变) --- */
+        /* --- 5. 产品橱窗 --- */
         .section-title {
             text-align: center;
             font-family: var(--font-title);
@@ -247,7 +265,7 @@
             letter-spacing: 0.05em;
         }
 
-        /* --- 6. 购买区域 (Style Updated for CRO) --- */
+        /* --- 6. 购买区域 --- */
         #buy {
             display: grid;
             grid-template-columns: 1fr 1.5fr;
@@ -256,10 +274,9 @@
             margin-bottom: 100px;
             align-items: center;
             position: relative;
-            scroll-margin-top: 50px; /* 锚点偏移 */
+            scroll-margin-top: 50px;
         }
 
-        /* 脉冲高亮动画 */
         @keyframes border-pulse {
             0% { border-color: var(--glass-border); box-shadow: 0 8px 32px 0 rgba(0,0,0,0.3); }
             50% { border-color: var(--gold-primary); box-shadow: 0 0 30px rgba(212, 175, 55, 0.2), inset 0 0 20px rgba(212, 175, 55, 0.1); }
@@ -267,7 +284,7 @@
         }
 
         .pulse-active {
-            animation: border-pulse 1.5s ease-in-out 3; /* 闪烁3次 */
+            animation: border-pulse 1.5s ease-in-out 3;
         }
 
         .qr-placeholder {
@@ -306,13 +323,12 @@
         .price-item span:first-child { color: #ccc; }
         .price-item span:last-child { font-family: var(--font-title); color: var(--gold-primary); font-size: 1.1rem; }
 
-        /* 高亮套餐 */
         .price-item.highlight {
             border-bottom: 1px solid rgba(212, 175, 55, 0.3);
             background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.05));
             padding-left: 10px;
             padding-right: 10px;
-            margin: 10px -10px; /* 视觉拉伸 */
+            margin: 10px -10px;
             border-radius: 4px;
         }
         .price-item.highlight span:last-child {
@@ -321,7 +337,6 @@
             font-size: 1.3rem;
         }
 
-        /* 巨大的行动按钮 */
         .contact-btn {
             width: 100%;
             padding: 20px;
@@ -346,7 +361,6 @@
             box-shadow: 0 10px 30px rgba(212, 175, 55, 0.4);
         }
 
-        /* 流光扫过动画 */
         .contact-btn::after {
             content: '';
             position: absolute;
@@ -366,7 +380,6 @@
             text-align: center;
         }
 
-        /* --- 7. Footer --- */
         footer {
             text-align: center;
             padding: 40px 20px;
@@ -375,7 +388,7 @@
             border-top: 1px solid rgba(255,255,255,0.05);
         }
 
-        /* --- 8. 动画与辅助类 --- */
+        /* --- 动画 --- */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -393,7 +406,7 @@
         .delay-3 { animation-delay: 0.6s; }
         .delay-4 { animation-delay: 0.8s; }
 
-        /* Toast 提示 */
+        /* Toast */
         #toast {
             visibility: hidden;
             min-width: 250px;
@@ -420,7 +433,39 @@
             bottom: 50px;
         }
 
-        /* --- 移动端适配 --- */
+        /* 顶部兑换按钮样式 */
+        .terminal-entry-btn {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--gold-primary);
+            border-radius: 50px;
+            color: var(--gold-primary);
+            text-decoration: none;
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.1);
+        }
+        .terminal-entry-btn:hover {
+            background: var(--gold-primary);
+            color: #000;
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.4);
+            transform: translateY(-2px);
+        }
+        .terminal-entry-btn .icon {
+            animation: blink 2s infinite;
+        }
+        @keyframes blink { 50% { opacity: 0.5; } }
+
         @media (max-width: 768px) {
             .hero h1 { margin-bottom: 2rem; }
             #buy {
@@ -432,6 +477,9 @@
                 margin: 0 auto;
             }
             .btn-group { flex-direction: column; }
+            .terminal-entry-btn {
+                top: 15px; right: 15px; padding: 8px 15px; font-size: 0.7rem;
+            }
         }
     </style>
 </head>
@@ -439,50 +487,16 @@
 
     <div class="ambient-bg"></div>
     <div class="noise-overlay"></div>
-    <a href="redeem.html" class="terminal-entry-btn">
-    <span class="icon">⚡</span>
-    <span class="text">兑换码入口 REDDEM KEY</span>
-</a>
-
-<style>
-    /* 将此样式添加到 index.html 的 <style> 中 */
-    .terminal-entry-btn {
-        position: fixed;
-        top: 25px;
-        right: 25px;
-        z-index: 100;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 20px;
-        background: rgba(0, 0, 0, 0.6);
-        border: 1px solid var(--gold-primary);
-        border-radius: 50px;
-        color: var(--gold-primary);
-        text-decoration: none;
-        font-family: var(--font-body);
-        font-size: 0.8rem;
-        letter-spacing: 0.1em;
-        backdrop-filter: blur(10px);
-        transition: all 0.3s ease;
-        box-shadow: 0 0 15px rgba(212, 175, 55, 0.1);
-    }
-
-    .terminal-entry-btn:hover {
-        background: var(--gold-primary);
-        color: #000;
-        box-shadow: 0 0 30px rgba(212, 175, 55, 0.4);
-        transform: translateY(-2px);
-    }
     
-    .terminal-entry-btn .icon {
-        animation: blink 2s infinite;
-    }
+    <a href="redeem.html" class="terminal-entry-btn">
+        <span class="icon">⚡</span>
+        <span class="text">兑换码入口 REDDEM KEY</span>
+    </a>
 
-    @keyframes blink { 50% { opacity: 0.5; } }
-</style>
     <div class="container">
         <header class="hero">
+            <canvas id="heroCanvas"></canvas>
+            
             <h1>CYBER GIFT 2026</h1>
             <p>理工科的极致浪漫 · 永久封存的数字誓言</p>
             <div class="scroll-hint">SCROLL TO DISCOVER</div>
@@ -503,12 +517,12 @@
             </article>
 
             <article class="product-card glass-panel fade-in-up delay-3">
-                <div class="product-icon">🌹</div>
-                <h2 class="product-name">Digital Rose</h2>
-                <p class="product-desc">指尖掌控花期，只为你一人绽放。</p>
+                <div class="product-icon">❤️</div>
+                <h2 class="product-name">Cyber Heart</h2>
+                <p class="product-desc">同频共振的机械心跳，只为你永恒跃动。</p>
                 <div class="btn-group">
-                    <a href="./rose/" class="btn btn-primary">查看示例 Preview</a>
-                    <button class="btn btn-secondary" onclick="copyLink('./rose/')">分享 Share</button>
+                    <a href="./heart/" class="btn btn-primary">查看示例 Preview</a>
+                    <button class="btn btn-secondary" onclick="copyLink('./heart/')">分享 Share</button>
                 </div>
                 <div class="demo-tag">● 演示数据 / Example</div>
             </article>
@@ -520,6 +534,16 @@
                 <div class="btn-group">
                     <a href="./firework/" class="btn btn-primary">查看示例 Preview</a>
                     <button class="btn btn-secondary" onclick="copyLink('./firework/')">分享 Share</button>
+                </div>
+                <div class="demo-tag">● 演示数据 / Example</div>
+            </article>
+            <article class="product-card glass-panel fade-in-up delay-4">
+                <div class="product-icon">🔯</div>
+                <h2 class="product-name">Mystic Portal</h2>
+                <p class="product-desc">悬浮粒子秘术法阵，开启2026时空传送门。</p>
+                <div class="btn-group">
+                    <a href="./magicframe/" class="btn btn-primary">查看示例 Preview</a>
+                    <button class="btn btn-secondary" onclick="copyLink('./magicframe/')">分享 Share</button>
                 </div>
                 <div class="demo-tag">● 演示数据 / Example</div>
             </article>
@@ -565,7 +589,9 @@
     <div id="toast">已复制到剪贴板 / Copied to clipboard</div>
 
     <script>
-        // 通用 Toast 提示函数
+        // --- 核心 JS 逻辑 ---
+        
+        // 1. Toast & Copy Functions
         function showToast(message) {
             const toast = document.getElementById("toast");
             toast.innerText = message;
@@ -573,7 +599,6 @@
             setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
         }
 
-        // 复制链接功能
         function copyLink(path) {
             const fullUrl = window.location.origin + window.location.pathname.replace('index.html', '') + path.replace('./', '');
             if(navigator.clipboard && window.isSecureContext) {
@@ -583,44 +608,160 @@
             }
         }
 
-        // 复制微信号功能
         function copyWeChat() {
             const wechatId = "https://m.tb.cn/h.7c2bDUb?tk=pTHEftQbSrY";
             if(navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(wechatId).then(() => {
                     showToast("闲鱼链接已复制，请粘贴到浏览器或打开闲鱼APP访问");
-                }).catch(() => showToast("复制失败: https://m.tb.cn/h.7c2bDUb?tk=pTHEftQbSrY"));
+                }).catch(() => showToast("复制失败"));
             } else {
-                // 兼容旧浏览器
                 const textArea = document.createElement("textarea");
                 textArea.value = wechatId;
                 document.body.appendChild(textArea);
                 textArea.select();
                 try { document.execCommand('copy'); showToast("闲鱼链接已复制"); } 
-                catch (err) { alert("复制失败，请手动添加: " + wechatId); }
+                catch (err) { alert("复制失败，请手动添加"); }
                 document.body.removeChild(textArea);
             }
         }
 
-        // --- 核心 JS 逻辑：检测 URL 是否包含 #buy 并自动聚焦 ---
         window.addEventListener('load', function() {
             if (window.location.hash === '#buy') {
                 const buySection = document.getElementById('buy');
                 if (buySection) {
-                    // 稍微延迟以确保页面渲染完毕
                     setTimeout(() => {
-                        // 平滑滚动
                         buySection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        // 触发高亮动画
                         buySection.classList.add('pulse-active');
-                        // 动画结束后移除类
-                        setTimeout(() => {
-                            buySection.classList.remove('pulse-active');
-                        }, 4500);
+                        setTimeout(() => { buySection.classList.remove('pulse-active'); }, 4500);
                     }, 300);
                 }
             }
         });
+
+        // 2. Hero Particle Animation (新增粒子背景脚本)
+        (function() {
+            const canvas = document.getElementById('heroCanvas');
+            const ctx = canvas.getContext('2d');
+            let width, height;
+            let particles = [];
+
+            // 粒子配置
+            const particleCount = 60; // 粒子数量，适中不卡顿
+            const connectionDistance = 0; // 设为0表示不连线，保持简洁星尘感
+            const mouseDistance = 150; // 鼠标互动范围
+
+            // 鼠标位置
+            let mouse = { x: null, y: null };
+
+            window.addEventListener('mousemove', (e) => {
+                // 修正：需要减去 canvas 相对于视口的偏移量（虽然这里 canvas 是 absolute top 0）
+                const rect = canvas.getBoundingClientRect();
+                mouse.x = e.clientX - rect.left;
+                mouse.y = e.clientY - rect.top;
+            });
+            
+            window.addEventListener('mouseleave', () => {
+                mouse.x = null;
+                mouse.y = null;
+            });
+
+            function resize() {
+                // 获取父元素 .hero 的尺寸
+                const hero = document.querySelector('.hero');
+                width = canvas.width = hero.offsetWidth;
+                height = canvas.height = hero.offsetHeight;
+            }
+
+            class Particle {
+                constructor() {
+                    this.init();
+                }
+
+                init() {
+                    this.x = Math.random() * width;
+                    this.y = Math.random() * height;
+                    this.vx = (Math.random() - 0.5) * 0.5; // 水平速度极慢
+                    this.vy = -(Math.random() * 0.5 + 0.2); // 垂直速度向上，模拟气泡/升力
+                    this.size = Math.random() * 2 + 0.5; // 大小不一
+                    this.alpha = Math.random() * 0.5 + 0.1; // 透明度
+                    this.fadeSpeed = Math.random() * 0.005 + 0.002; // 闪烁速度
+                    this.fadingOut = Math.random() > 0.5;
+                }
+
+                update() {
+                    // 基本运动
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    // 呼吸闪烁效果
+                    if (this.fadingOut) {
+                        this.alpha -= this.fadeSpeed;
+                        if (this.alpha <= 0.1) this.fadingOut = false;
+                    } else {
+                        this.alpha += this.fadeSpeed;
+                        if (this.alpha >= 0.7) this.fadingOut = true;
+                    }
+
+                    // 边界检测：超出顶部则重置到底部
+                    if (this.y < -10) {
+                        this.y = height + 10;
+                        this.x = Math.random() * width;
+                    }
+                    if (this.x < -10) this.x = width + 10;
+                    if (this.x > width + 10) this.x = -10;
+
+                    // 鼠标互动（视差/排斥）
+                    if (mouse.x != null) {
+                        let dx = mouse.x - this.x;
+                        let dy = mouse.y - this.y;
+                        let distance = Math.sqrt(dx*dx + dy*dy);
+                        if (distance < mouseDistance) {
+                            const forceDirectionX = dx / distance;
+                            const forceDirectionY = dy / distance;
+                            const force = (mouseDistance - distance) / mouseDistance;
+                            // 轻轻推开
+                            this.x -= forceDirectionX * force * 1.5;
+                            this.y -= forceDirectionY * force * 1.5;
+                        }
+                    }
+                }
+
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    // 使用金色变量色值 rgb(212, 175, 55)
+                    ctx.fillStyle = `rgba(212, 175, 55, ${this.alpha})`; 
+                    ctx.fill();
+                }
+            }
+
+            function initParticles() {
+                particles = [];
+                for (let i = 0; i < particleCount; i++) {
+                    particles.push(new Particle());
+                }
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                for (let i = 0; i < particles.length; i++) {
+                    particles[i].update();
+                    particles[i].draw();
+                }
+                requestAnimationFrame(animate);
+            }
+
+            window.addEventListener('resize', () => {
+                resize();
+                initParticles();
+            });
+
+            // 启动
+            resize();
+            initParticles();
+            animate();
+
+        })();
     </script>
 </body>
 </html>
