@@ -137,6 +137,18 @@
         .gift-name { font-size: 0.7rem; color: #aaa; letter-spacing: 1px; font-weight: bold; }
         .gift-option.selected .gift-name { color: var(--gold-primary); }
 
+        /* 新增：平台标签样式 */
+        .platform-tag {
+            color: #888;
+            font-size: 0.6rem;
+            font-weight: normal;
+            margin-left: 4px;
+        }
+        .gift-option.selected .platform-tag {
+            color: var(--gold-primary);
+            opacity: 0.7;
+        }
+
         /* 按钮样式 */
         .verify-btn {
             width: 100%; padding: 16px; background: var(--gold-gradient); border: none; border-radius: 4px;
@@ -254,10 +266,10 @@
                         <span class="gift-icon">🎆</span><span class="gift-name">FIREWORK</span>
                     </div>
                     <div class="gift-option" onclick="selectGift('love')">
-                        <span class="gift-icon">❤️</span><span class="gift-name">LOVE</span>
+                        <span class="gift-icon">❤️</span><span class="gift-name">LOVE<span class="platform-tag">(仅支持PC)</span></span>
                     </div>
                     <div class="gift-option" onclick="selectGift('portal')">
-                        <span class="gift-icon">🔯</span><span class="gift-name">PORTAL</span>
+                        <span class="gift-icon">🔯</span><span class="gift-name">PORTAL<span class="platform-tag">(仅支持PC)</span></span>
                     </div>
                 </div>
             </div>

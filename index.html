@@ -585,10 +585,10 @@
                     </li> -->
                 </ul>
 
-                <button class="contact-btn" onclick="copyWeChat()">
-                    扫码或点击 进入闲鱼购买兑换码
+                <button class="contact-btn" onclick="window.open('https://m.tb.cn/h.7XJ7LOx?tk=GB2QftESasj', '_blank')">
+                    前往闲鱼购买兑换码
                 </button>
-                <p class="sub-note">扫码购买兑换码，24小时自动发货</p>
+                <p class="sub-note">扫码或点击跳转，24小时自动发货</p>
             </div>
         </section>
 
@@ -616,23 +616,6 @@
                  navigator.clipboard.writeText(fullUrl).then(() => showToast("示例链接已复制")).catch(err => showToast("复制失败，请手动复制"));
             } else {
                 showToast("链接: " + fullUrl);
-            }
-        }
-
-        function copyWeChat() {
-            const wechatId = "https://m.tb.cn/h.7XJ7LOx?tk=GB2QftESasj";
-            if(navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(wechatId).then(() => {
-                    showToast("闲鱼链接已复制，请粘贴到浏览器或打开闲鱼APP访问");
-                }).catch(() => showToast("复制失败"));
-            } else {
-                const textArea = document.createElement("textarea");
-                textArea.value = wechatId;
-                document.body.appendChild(textArea);
-                textArea.select();
-                try { document.execCommand('copy'); showToast("闲鱼链接已复制"); } 
-                catch (err) { alert("复制失败，请手动添加"); }
-                document.body.removeChild(textArea);
             }
         }
 
