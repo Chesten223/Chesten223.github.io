@@ -262,10 +262,7 @@
                 </div>
             </div>
 
-            <div class="input-group">
-                <label class="input-label">IDENTITY DESIGNATION (NAME) 注：每行话最多10个字，不然会遮挡</label>
-                <input type="text" id="inputName" class="access-input step-2-input" placeholder="e.g. Alice" maxlength="20">
-            </div>
+
 
             <div class="input-group">
                 <label class="input-label">ENCODED MESSAGE (WISH)</label>
@@ -319,7 +316,6 @@
             step1: document.getElementById('step1'),
             step2: document.getElementById('step2'),
             inputCode: document.getElementById('keyCode'),
-            inputName: document.getElementById('inputName'),
             inputWish: document.getElementById('inputWish'),
             btn1: document.getElementById('btnStep1'),
             btn2: document.getElementById('btnStep2'),
@@ -375,7 +371,6 @@
 
         // --- 逻辑 Step 2: 核销与生成 ---
         async function finalizeGift() {
-            const name = UI.inputName.value.trim() || "Traveler";
             const wish = UI.inputWish.value.trim() || "Best Wishes";
 
             setLoading(UI.btn2, true, "ENCRYPTING DATA...");
@@ -383,7 +378,7 @@
             try {
                 const payload = {
                     code: currentCode,
-                    payload: { name: name, wish: wish }
+                    payload: { wish: wish }
                 };
 
                 const response = await fetch(`${API_BASE}/finalize`, {
@@ -465,7 +460,7 @@
             UI.step1.classList.add('hidden');
             UI.step2.classList.remove('hidden');
             UI.step2.classList.add('fade-in');
-            setTimeout(() => UI.inputName.focus(), 500);
+            setTimeout(() => UI.inputWish.focus(), 500);
         }
 
         function setLoading(btn, isLoading, text) {

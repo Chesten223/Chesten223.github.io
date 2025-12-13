@@ -218,11 +218,10 @@
                         const payload = result.data;
                         console.log("Verified Gift:", payload);
                         
-                        if (payload.name || payload.wish) { 
+                        if (payload.wish) { 
                             isPaidUser = true; 
                             
                             let customText = "";
-                            if(payload.name) customText += payload.name + " ";
                             if(payload.wish) customText += payload.wish.replace(/\n/g, "  ") + " ";
                             // customText += " 2026 ";
                             

@@ -252,13 +252,11 @@
                     const payload = result.data;
                     console.log("Verified Gift:", payload);
                     
-                    if (payload.name || payload.wish) { 
+                    if (payload.wish) { 
                         isPaidUser = true; 
                         
                         // 【修改点】付费版也不再加倒计时，直接放内容
                         let newTextList = []; 
-                        
-                        if(payload.name) newTextList.push(payload.name); 
                         
                         if(payload.wish) { 
                             const lines = payload.wish.split('\n').filter(line => line.trim() !== ''); 

@@ -256,16 +256,11 @@
                     console.log("Verified Gift:", payload);
                     
                     // === 只有后端解密成功，才显示定制内容 === 
-                    if (payload.name || payload.wish) { 
+                    if (payload.wish) { 
                         isPaidUser = true; // 标记为付费用户 
                         
                         // 1. 构建基础播放列表 (倒计时) 
                         let newTextList = ["3", "2", "1"]; 
-                        
-                        // 2. 插入名字 
-                        if(payload.name) { 
-                            newTextList.push(payload.name); 
-                        } 
                         
                         // 3. 插入 2026 (固定年份) 
                         // newTextList.push("2026"); 
