@@ -661,13 +661,41 @@
                 ctx.clearRect(0,0,w,h);
                 ctx.fillStyle = '#000'; ctx.fillRect(0,0,w,h);
                 ctx.fillStyle = '#fff';
-                let fontSize = 70;
-                if(phrase.length > 8) fontSize = 50;
-                if(phrase.length > 15) fontSize = 35;
                 
-                ctx.font = `bold ${fontSize}px Arial`;
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText(phrase, w/2, h/2);
+                // === 修改开始：自动换行逻辑 ===
+                const baseFontSize = 50; // 基础字号
+                ctx.font = `bold ${baseFontSize}px Arial`;
+                ctx.textAlign = 'center'; 
+                ctx.textBaseline = 'middle';
+
+                const maxWidth = w * 0.9; // 留出10%边距
+                const lineHeight = baseFontSize * 1.2;
+                const words = phrase.split(''); // 按字分割（兼容中文和英文），如果是纯英文可以用 ' '
+                let lines = [];
+                let currentLine = words[0];
+
+                // 逐字测量宽度，决定是否换行
+                for (let i = 1; i < words.length; i++) {
+                    const char = words[i];
+                    const width = ctx.measureText(currentLine + char).width;
+                    if (width < maxWidth) {
+                        currentLine += char;
+                    } else {
+                        lines.push(currentLine);
+                        currentLine = char;
+                    }
+                }
+                lines.push(currentLine);
+
+                // 计算垂直居中的起始位置
+                const totalHeight = lines.length * lineHeight;
+                const startY = (h - totalHeight) / 2 + (lineHeight / 2);
+
+                // 绘制每一行
+                lines.forEach((line, i) => {
+                    ctx.fillText(line, w/2, startY + i * lineHeight);
+                });
+                // === 修改结束 ===
 
                 const data = ctx.getImageData(0,0,w,h).data;
                 const validPixels = [];
@@ -680,6 +708,7 @@
                 
                 const textTarget = new Float32Array(this.count * 3);
                 for(let i=0; i<this.count; i++) {
+                    // 如果像素点不够（文字很少），随机取点填补
                     const p = validPixels[i % validPixels.length] || {x:w/2, y:h/2};
                     textTarget[i*3] = (p.x / w - 0.5) * 80;
                     textTarget[i*3+1] = -(p.y / h - 0.5) * 40;

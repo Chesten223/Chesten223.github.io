@@ -347,14 +347,7 @@
         filledPixels = 0;
         isTextFull = false;
         
-        // 清理粘住的粒子
-        particles.forEach(p => {
-            if(p.isStuck) {
-                p.isStuck = false;
-                p.dead = true;
-                p.alpha = 0;
-            }
-        });
+        particles.forEach(p => { if(p.isStuck) { p.isStuck = false; p.dead = true; p.alpha = 0; } });
         particles = particles.filter(p => !p.dead);
 
         const tempCanvas = document.createElement('canvas');
@@ -362,19 +355,39 @@
         tempCanvas.width = width;
         tempCanvas.height = height;
 
-        // 动态调整字体大小
-        let fontSize = Math.min(width, height) * config.fontSizeMultiplier;
-        if (isMobile) fontSize *= 1.4; 
-        
-        // 【修改点】根据字数微调，因为现在默认句子比较长
-        if (text.length > 7) fontSize *= 0.6;
-        else if (text.length > 4) fontSize *= 0.8;
-
+        let fontSize = Math.min(width, height) * 0.12;
+        if (isMobile) fontSize *= 1.3;
         tempCtx.font = `bold ${fontSize}px "Microsoft YaHei", sans-serif`;
         tempCtx.fillStyle = 'white';
         tempCtx.textAlign = 'center';
         tempCtx.textBaseline = 'middle';
-        tempCtx.fillText(text, width / 2, height / 2);
+
+        // --- 自动换行逻辑开始 ---
+        const maxWidth = width * 0.8;
+        const lineHeight = fontSize * 1.2;
+        const words = text.split('');
+        let lines = [];
+        let currentLine = words[0];
+
+        for (let i = 1; i < words.length; i++) {
+            const char = words[i];
+            const testWidth = tempCtx.measureText(currentLine + char).width;
+            if (testWidth < maxWidth) {
+                currentLine += char;
+            } else {
+                lines.push(currentLine);
+                currentLine = char;
+            }
+        }
+        lines.push(currentLine);
+
+        const totalHeight = lines.length * lineHeight;
+        const startY = (height - totalHeight) / 2 + (lineHeight / 2);
+
+        lines.forEach((line, i) => {
+            tempCtx.fillText(line, width / 2, startY + i * lineHeight);
+        });
+        // --- 自动换行逻辑结束 ---
 
         const imageData = tempCtx.getImageData(0, 0, width, height);
         const data = imageData.data;
@@ -383,19 +396,14 @@
         for (let y = height - 1; y >= 0; y -= gap) {
             const alignedY = Math.floor(y / gap) * gap;
             if (!textGrid[alignedY]) textGrid[alignedY] = {};
-            
             for (let x = 0; x < width; x += gap) {
                 const alignedX = Math.floor(x / gap) * gap;
                 if (data[(y * width + x) * 4 + 3] > 128) {
-                    textGrid[alignedY][alignedX] = {
-                        filled: false,
-                        color: null
-                    };
+                    textGrid[alignedY][alignedX] = { filled: false, color: null };
                     totalTextPixels++;
                 }
             }
         }
-        console.log(`Text "${text}" Grid Ready: ${totalTextPixels} points`);
     }
 
     // === 4. 烟花系统 ===

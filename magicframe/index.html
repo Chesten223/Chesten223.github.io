@@ -291,27 +291,32 @@
             
             ctx.shadowBlur = 0; 
 
-            // 3. Text (草书)
-            ctx.font = "110px 'Ma Shan Zheng', 'Xingkai SC', 'STXingkai', cursive"; 
-            ctx.fillStyle = mainColor; 
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = "#aa2200";
+            // --- 修改文字绘制部分 ---
+            // 动态计算字号：文字越长，字体越小，防止重叠 
+            let dynamicFontSize = 110; 
+            if (runeText.length > 20) dynamicFontSize = 80; 
+            if (runeText.length > 40) dynamicFontSize = 50; 
 
-            const radius = size/2 - 170;
+            ctx.font = `${dynamicFontSize}px 'Ma Shan Zheng', 'STXingkai', cursive`; 
+            ctx.fillStyle = mainColor; 
+            ctx.textAlign = "center"; 
+            ctx.textBaseline = "middle"; 
+            
+            ctx.shadowBlur = 15; 
+            ctx.shadowColor = "#aa2200"; 
+
+            const radius = size/2 - 170; 
             const angleStep = (Math.PI * 2) / runeText.length; 
 
-            ctx.save();
-            for (let i = 0; i < runeText.length; i++) {
-                const angle = i * angleStep - Math.PI/2;
-                ctx.save();
-                ctx.translate(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
-                ctx.rotate(angle + Math.PI/2);
-                ctx.fillText(runeText[i], 0, 0);
-                ctx.restore();
-            }
+            ctx.save(); 
+            for (let i = 0; i < runeText.length; i++) { 
+                const angle = i * angleStep - Math.PI/2; 
+                ctx.save(); 
+                ctx.translate(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius); 
+                ctx.rotate(angle + Math.PI/2); 
+                ctx.fillText(runeText[i], 0, 0); 
+                ctx.restore(); 
+            } 
             ctx.restore();
 
             return new THREE.CanvasTexture(canvas);

@@ -591,29 +591,51 @@
         tempCanvas.width = width;
         tempCanvas.height = height;
         
-        let fontSize = Math.min(width, height) * 0.18; 
-        if (isMobile) fontSize *= 1.4; 
-
-        if (text.length > 8) fontSize *= 0.5;
-        else if (text.length > 4) fontSize *= 0.6;
-        if (isMobile && text.length > 5) fontSize *= 0.8;
-
+        // 基础字号设置
+        let fontSize = Math.min(width, height) * 0.15;
+        if (isMobile) fontSize *= 1.2;
         tempCtx.font = `bold ${fontSize}px "Microsoft YaHei", sans-serif`;
         tempCtx.fillStyle = 'white';
         tempCtx.textAlign = 'center';
         tempCtx.textBaseline = 'middle';
-        tempCtx.fillText(text, width / 2, height / 2);
+
+        // --- 自动换行逻辑开始 ---
+        const maxWidth = width * 0.85;
+        const lineHeight = fontSize * 1.2;
+        const words = text.split('');
+        let lines = [];
+        let currentLine = words[0];
+
+        for (let i = 1; i < words.length; i++) {
+            const char = words[i];
+            const testWidth = tempCtx.measureText(currentLine + char).width;
+            if (testWidth < maxWidth) {
+                currentLine += char;
+            } else {
+                lines.push(currentLine);
+                currentLine = char;
+            }
+        }
+        lines.push(currentLine);
+
+        // 计算垂直居中起始 Y
+        const totalHeight = lines.length * lineHeight;
+        const startY = (height - totalHeight) / 2 + (lineHeight / 2);
+
+        // 绘制多行文字
+        lines.forEach((line, i) => {
+            tempCtx.fillText(line, width / 2, startY + i * lineHeight);
+        });
+        // --- 自动换行逻辑结束 ---
         
         const imageData = tempCtx.getImageData(0, 0, width, height);
         const data = imageData.data;
         const coords = [];
-        
-        const gap = isMobile ? 3 : 4; 
+        const gap = isMobile ? 3 : 4;
         
         for (let y = 0; y < height; y += gap) {
             for (let x = 0; x < width; x += gap) {
                 if (data[(y * width + x) * 4 + 3] > 180) {
-                    if (isMobile && Math.random() > 1.0) continue;
                     coords.push({ x: x, y: y });
                 }
             }
