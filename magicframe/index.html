@@ -195,6 +195,9 @@
         let currentStage = 0;
         let pulseScale = 0;
 
+        // [添加] 这是一个新变量，用来标记是否正在长按屏幕 
+        let isLongPressing = false;
+
         // === 2. API 逻辑 ===
         window.goBuy = function() {
             window.location.href = BUY_LINK;
@@ -487,19 +490,26 @@
                     hasShownAd = true;
                 }
             } else {
-                if (isHandDetected && isHandOpen) {
-                    // [修改] 靠近加速充能
-                    const proximityBonus = handProximity * 0.0008; 
-                    energy += (CONFIG.energyRate + proximityBonus);
+                // [修改] 核心逻辑：如果是 (检测到手且张开) 或者 (正在长按屏幕) 都可以充能 
+                if ((isHandDetected && isHandOpen) || isLongPressing) { 
                     
-                    document.getElementById('status').innerText = "CONJURING...";
-                    document.getElementById('status').style.color = "#ff3300";
-                } else {
+                    // 如果是长按，我们模拟一个比较近的距离(0.35)，让能量涨得快一点 
+                    // 如果是摄像头，就用真实的 handProximity 
+                    const activeProx = isLongPressing ? 0.35 : handProximity; 
+
+                    // [修改] 计算充能速度 
+                    const proximityBonus = activeProx * 0.0008; 
+                    energy += (CONFIG.energyRate + proximityBonus); 
+                    
+                    document.getElementById('status').innerText = "CONJURING..."; 
+                    document.getElementById('status').style.color = "#ff3300"; 
+                } else { 
                     energy += CONFIG.autoChargeRate; 
                     
-                    if(!isHandDetected) document.getElementById('status').innerText = "GATHERING ENERGY...";
-                    else document.getElementById('status').innerText = "OPEN HAND TO BOOST";
-                    document.getElementById('status').style.color = "#555";
+                    // 提示文案也改一下 
+                    if(!isHandDetected && !isLongPressing) document.getElementById('status').innerText = "GATHERING ENERGY..."; 
+                    else document.getElementById('status').innerText = "HOLD SCREEN OR OPEN HAND"; 
+                    document.getElementById('status').style.color = "#555"; 
                 }
 
                 energy = Math.max(0, Math.min(1, energy));
@@ -528,16 +538,18 @@
         }
 
         function updateVisuals() {
-            // [修改] 速度控制手感
-            // 提高 distThreshold (0.20)，只有当 (prox - 0.20) > 0 时才计算有效距离
-            // 然后使用 4次方曲线，让初始阶段增速极慢
-            let effectiveDist = Math.max(0, handProximity - CONFIG.distThreshold);
-            // 假设贴脸时 effectiveDist 约为 0.4
-            // 0.4^4 = 0.0256 (很小)
-            // 所以我们需要稍微乘个系数再平方/立方
+            // [修改] 确定当前的距离值。如果是长按，就强制设为 0.35，让特效转起来 
+            const currentProx = isLongPressing ? 0.35 : handProximity; 
+
+            // [修改] 使用新的 currentProx 来计算特效速度 
+            let effectiveDist = Math.max(0, currentProx - CONFIG.distThreshold); 
             
-            // 修正算法：
-            // 当 effectiveDist 接近 0.3 (比较近) 时，加速才明显
+            // 假设贴脸时 effectiveDist 约为 0.4 
+            // 0.4^4 = 0.0256 (很小) 
+            // 所以我们需要稍微乘个系数再平方/立方 
+            
+            // 修正算法： 
+            // 当 effectiveDist 接近 0.3 (比较近) 时，加速才明显 
             let speedBoost = Math.pow(effectiveDist * 2.5, 4); 
             
             const speedFactor = CONFIG.minSpeed + (speedBoost * energy * 0.1);
@@ -626,6 +638,24 @@
             hasStarted = true;
             setupMediaPipe();
             if(!scene) initThree();
+
+            // [添加] 这里开始是新增的长按监听代码 =========== 
+            // 监听手机触摸开始 
+            document.addEventListener('touchstart', (e) => { 
+                // 这里的 preventDefault 可以防止长按时弹出浏览器菜单，但不影响点击广告 
+                if(e.target.tagName !== 'A' && e.target.parentElement.tagName !== 'A') { 
+                     // e.preventDefault(); // 如果发现按钮点不动，就把这一行删掉 
+                } 
+                isLongPressing = true; 
+            }, {passive: false}); 
+            
+            // 监听手机触摸结束 
+            document.addEventListener('touchend', () => { isLongPressing = false; }); 
+            
+            // 同时也加上电脑鼠标的，方便你在电脑上测试 
+            document.addEventListener('mousedown', () => { isLongPressing = true; }); 
+            document.addEventListener('mouseup', () => { isLongPressing = false; }); 
+            // [添加] 结束 =============================== 
         };
 
         function setupMediaPipe() {

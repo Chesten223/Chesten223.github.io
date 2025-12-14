@@ -4,11 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Access Terminal | 2026 Cyber Gift</title>
-        <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+SC:wght@300;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
         /* =========================================
-           1. 核心视觉样式 (Cyberpunk/Black Gold)
+           1. 核心视觉样式
            ========================================= */
         :root {
             --bg-dark: #050505;
@@ -17,7 +24,10 @@
             --gold-primary: #D4AF37;
             --gold-glow: rgba(212, 175, 55, 0.5);
             --gold-gradient: linear-gradient(135deg, #F3E5AB 0%, #D4AF37 50%, #aa8a26 100%);
-            --font-stack: 'Consolas', 'Monaco', 'Lucida Console', 'Courier New', monospace;
+            --font-main: 'Consolas', 'Monaco', monospace;
+            --font-title: 'Cinzel', serif;
+            --font-serif: 'Noto Serif SC', serif;
+            --font-tech: 'Share Tech Mono', monospace;
             --error-red: #ff4d4d;
         }
 
@@ -26,7 +36,7 @@
         body {
             background-color: var(--bg-dark);
             color: #e0e0e0;
-            font-family: var(--font-stack);
+            font-family: var(--font-main);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -37,9 +47,7 @@
 
         /* 背景动效 */
         .ambient-bg {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
             background: radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.05), transparent 70%);
         }
         .noise-overlay {
@@ -50,30 +58,23 @@
 
         /* 主卡片容器 */
         .console-card {
-            width: 90%;
-            max-width: 500px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 40px 30px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-            text-align: center;
-            position: relative;
-            opacity: 0;
-            animation: cardEntry 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-            margin: 20px 0;
+            width: 90%; max-width: 500px;
+            background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border); border-radius: 12px;
+            padding: 40px 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            text-align: center; position: relative;
+            opacity: 0; animation: cardEntry 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            margin: 20px 0; z-index: 10;
         }
         @keyframes cardEntry { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
 
         .console-header {
-            color: var(--gold-primary); font-size: 1.6rem; margin-bottom: 8px; font-weight: bold; letter-spacing: 2px;
+            color: var(--gold-primary); font-family: var(--font-title); font-size: 1.8rem; margin-bottom: 8px; font-weight: bold; letter-spacing: 2px;
             text-shadow: 0 0 15px var(--gold-glow);
         }
         .console-sub {
             font-size: 0.75rem; color: #888; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 3px;
-            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; display: inline-block;
+            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; display: inline-block; font-family: var(--font-tech);
         }
 
         /* 表单与输入框 */
@@ -82,157 +83,192 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .input-group { position: relative; margin-bottom: 20px; text-align: left; }
-        .input-label { font-size: 0.7rem; color: var(--gold-primary); opacity: 0.8; margin-bottom: 8px; display: block; letter-spacing: 1px; }
+        .input-label { font-size: 0.7rem; color: var(--gold-primary); opacity: 0.8; margin-bottom: 8px; display: block; letter-spacing: 1px; font-family: var(--font-tech); }
 
         .access-input {
             width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 4px; padding: 12px; font-family: var(--font-stack); font-size: 1.1rem;
+            border-radius: 4px; padding: 12px; font-family: var(--font-main); font-size: 1.1rem;
             color: #fff; text-align: center; letter-spacing: 2px; outline: none; transition: all 0.3s;
         }
         .access-input:focus { border-color: var(--gold-primary); background: rgba(0,0,0,0.5); box-shadow: 0 0 10px rgba(212, 175, 55, 0.2); }
-        .step-2-input { text-align: left; padding-left: 15px; letter-spacing: 1px; }
-
-        /* 针对 textarea 的新样式 */
+        
         textarea.access-input { 
-            height: 120px;       /* 设置高度，让框变大 */ 
-            resize: none;        /* 禁止用户拖动调整大小 */ 
-            line-height: 1.6;    /* 设置行高，文字不拥挤 */ 
-            padding: 15px;       /* 增加内边距 */ 
-            overflow-y: auto;    /* 内容多了显示滚动条 */ 
-            display: block;      /* 块级显示 */ 
-            white-space: pre-wrap; /* 保留换行符 */ 
+            height: 120px; resize: none; line-height: 1.6; padding: 15px; 
+            overflow-y: auto; display: block; white-space: pre-wrap; font-family: var(--font-serif);
+            text-align: left;
         } 
-
-        /* 针对 placeholder (提示文字) 的垂直居中调整 */ 
-        textarea.access-input::placeholder { 
-            line-height: 1.6; 
-            padding-top: 5px; 
-        }
+        textarea.access-input::placeholder { font-family: var(--font-main); }
 
         /* 礼物选择网格 */
-        .gift-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 25px;
-        }
-
+        .gift-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 25px; }
         .gift-option {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 15px 5px;
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px; padding: 15px 5px; cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden;
         }
-        .gift-option:hover { background: rgba(255, 255, 255, 0.1); transform: translateY(-2px); }
         .gift-option.selected {
-            border-color: var(--gold-primary);
-            background: rgba(212, 175, 55, 0.1);
-            box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
+            border-color: var(--gold-primary); background: rgba(212, 175, 55, 0.1); box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
         }
         .gift-icon { font-size: 1.8rem; margin-bottom: 8px; display: block; }
-        .gift-name { font-size: 0.7rem; color: #aaa; letter-spacing: 1px; font-weight: bold; }
+        .gift-name { font-size: 0.7rem; color: #aaa; letter-spacing: 1px; font-weight: bold; font-family: var(--font-tech); }
         .gift-option.selected .gift-name { color: var(--gold-primary); }
+        .platform-tag { color: #888; font-size: 0.6rem; font-weight: normal; margin-left: 4px; }
+        .gift-option.selected .platform-tag { color: var(--gold-primary); opacity: 0.7; }
 
-        /* 新增：平台标签样式 */
-        .platform-tag {
-            color: #888;
-            font-size: 0.6rem;
-            font-weight: normal;
-            margin-left: 4px;
-        }
-        .gift-option.selected .platform-tag {
-            color: var(--gold-primary);
-            opacity: 0.7;
-        }
-
-        /* 按钮样式 */
+        /* 按钮 */
         .verify-btn {
             width: 100%; padding: 16px; background: var(--gold-gradient); border: none; border-radius: 4px;
-            color: #050505; font-family: var(--font-stack); font-weight: bold; font-size: 1rem;
+            color: #050505; font-family: var(--font-tech); font-weight: bold; font-size: 1rem;
             letter-spacing: 2px; cursor: pointer; transition: all 0.3s; text-transform: uppercase;
         }
         .verify-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(212, 175, 55, 0.4); }
         .verify-btn:disabled { opacity: 0.6; cursor: not-allowed; filter: grayscale(0.8); }
 
         /* =========================================
-           2. 新增：结果展示与复制区样式
+           2. 结果展示区 (Card First Design)
            ========================================= */
         #result-area {
+            background: transparent; /* 去掉边框，让卡片突出 */
+            padding: 0; margin-top: 25px;
+            animation: fadeIn 0.8s forwards; position: relative;
+            display: flex; flex-direction: column; align-items: center; gap: 20px;
+        }
+
+        /* 生成的卡片展示 */
+        .generated-card-preview {
+            width: 100%;
+            max-width: 320px; /* 限制展示宽度 */
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            transition: transform 0.3s;
+            cursor: zoom-in;
+        }
+        .generated-card-preview:hover { transform: scale(1.02); }
+
+        /* 链接操作区 */
+        .link-actions {
+            width: 100%;
             background: rgba(0, 0, 0, 0.6);
             border: 1px dashed var(--gold-primary);
-            padding: 20px;
-            margin-top: 25px;
             border-radius: 8px;
-            animation: fadeIn 0.5s forwards;
-            position: relative;
+            padding: 15px;
         }
-        
+
         .result-title {
-            color: #fff; margin-bottom: 12px; font-weight: bold; letter-spacing: 1px; font-size: 0.9rem;
-            display: flex; justify-content: space-between; align-items: center;
+            color: #fff; margin-bottom: 12px; font-weight: bold; letter-spacing: 1px; font-size: 0.8rem;
+            font-family: var(--font-tech); text-align: left;
         }
-
         .url-box {
-            word-break: break-all;
-            color: #888;
-            font-size: 11px;
-            margin-bottom: 15px;
-            font-family: monospace;
-            background: rgba(0,0,0,0.3);
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid rgba(255,255,255,0.1);
-            user-select: all; /* 方便用户全选 */
-            text-align: left;
+            word-break: break-all; color: #888; font-size: 11px; margin-bottom: 15px; font-family: monospace;
+            background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);
+            user-select: all; text-align: left;
         }
 
+        .btn-group { display: flex; gap: 10px; }
         .copy-btn {
-            background: transparent;
-            border: 1px solid var(--gold-primary);
-            color: var(--gold-primary);
-            padding: 12px;
-            width: 100%;
-            border-radius: 4px;
-            cursor: pointer;
-            font-family: var(--font-stack);
-            font-weight: bold;
-            letter-spacing: 1px;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            background: transparent; border: 1px solid var(--gold-primary); color: var(--gold-primary);
+            padding: 10px; flex: 1; border-radius: 4px; cursor: pointer;
+            font-family: var(--font-tech); font-weight: bold; letter-spacing: 1px;
+            transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-        
         .copy-btn:hover { background: rgba(212, 175, 55, 0.1); }
+        .copy-btn.success { background: var(--gold-primary); color: #000; }
         
-        .copy-btn.success {
-            background: var(--gold-primary);
-            color: #000;
-            border-color: var(--gold-primary);
+        .direct-btn {
+            text-decoration: none; border: 1px solid rgba(255,255,255,0.2); color: #fff;
+            padding: 10px; border-radius: 4px; display: flex; align-items: center; justify-content: center;
+            font-family: var(--font-tech); transition: all 0.2s;
         }
+        .direct-btn:hover { border-color: #fff; background: rgba(255,255,255,0.1); }
 
-        .direct-link {
-            display: block; margin-top: 15px; color: #555; font-size: 11px; text-decoration: none; transition: color 0.3s;
-        }
-        .direct-link:hover { color: var(--gold-primary); text-decoration: underline; }
+        .save-tip { font-size: 0.7rem; color: #666; margin-top: 5px; font-family: var(--font-tech); }
 
-        /* 辅助样式 */
+        /* 辅助类 */
         .text-error { color: var(--error-red) !important; }
         .shake-animation { animation: shake 0.4s ease-in-out; border-color: var(--error-red) !important; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-        
         .loader { display: inline-block; width: 14px; height: 14px; border: 2px solid #000; border-radius: 50%; border-top-color: transparent; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: text-bottom; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
         .back-link { display: block; margin-top: 30px; color: #666; text-decoration: none; font-size: 0.7rem; transition: color 0.3s; letter-spacing: 1px; }
         .back-link:hover { color: var(--gold-primary); }
-
         .status-msg { height: 20px; font-size: 0.75rem; margin-bottom: 20px; color: var(--gold-primary); letter-spacing: 1px; }
+
+        /* =========================================
+           3. GENERATOR STAGE (修复版)
+           使用 position: fixed + z-index: -5 替代 left: -9999px
+           这能解决 html2canvas 无法捕获的问题
+           ========================================= */
+        #card-stage {
+            position: fixed; 
+            top: 0; left: 0; 
+            z-index: -5; /* 在背景后面，但在视口内 */
+            opacity: 0;  /* 用户不可见，但 DOM 存在 */
+            width: 450px; 
+            height: 800px; /* 9:16 Ratio */
+            background-color: #050505;
+            background-image: 
+                radial-gradient(circle at 50% 10%, rgba(212, 175, 55, 0.15), transparent 60%),
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.07'/%3E%3C/svg%3E");
+            font-family: var(--font-serif);
+            padding: 40px;
+            box-sizing: border-box;
+            display: flex; flex-direction: column; justify-content: space-between;
+            border: 1px solid #222;
+            /* 确保文本渲染优化 */
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 装饰角标 */
+        #card-stage::before, #card-stage::after { content: ''; position: absolute; width: 30px; height: 30px; border: 2px solid var(--gold-primary); pointer-events: none; }
+        #card-stage::before { top: 20px; left: 20px; border-right: none; border-bottom: none; }
+        #card-stage::after { bottom: 20px; right: 20px; border-left: none; border-top: none; }
+        
+        .card-inner-frame { position: absolute; top: 20px; right: 20px; width: 30px; height: 30px; border-top: 2px solid var(--gold-primary); border-right: 2px solid var(--gold-primary); }
+        .card-inner-frame-bl { position: absolute; bottom: 20px; left: 20px; width: 30px; height: 30px; border-bottom: 2px solid var(--gold-primary); border-left: 2px solid var(--gold-primary); }
+
+        /* 卡片内容 */
+        .card-header { text-align: center; border-bottom: 1px solid rgba(212, 175, 55, 0.3); padding-bottom: 20px; margin-bottom: 20px; }
+        .card-title { font-family: var(--font-title); color: var(--gold-primary); font-size: 28px; letter-spacing: 4px; font-weight: 700; text-shadow: 0 0 10px rgba(212, 175, 55, 0.3); }
+        .card-subtitle { font-family: var(--font-tech); color: #666; font-size: 10px; letter-spacing: 6px; margin-top: 5px; }
+
+        .card-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        .ticket-type { 
+            border: 1px solid var(--gold-primary); color: var(--gold-primary); padding: 4px 12px; 
+            font-family: var(--font-tech); font-size: 12px; letter-spacing: 2px; margin-bottom: 30px; 
+            background: rgba(212, 175, 55, 0.05);
+        }
+        .user-chip {
+            background: linear-gradient(135deg, #222 0%, #111 100%);
+            border: 1px solid #444; border-left: 4px solid var(--gold-primary);
+            padding: 10px 30px; margin-bottom: 40px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .user-id-label { font-size: 9px; color: #555; font-family: var(--font-tech); display: block; margin-bottom: 2px; }
+        .user-id-val { font-family: var(--font-tech); font-size: 20px; color: #ddd; letter-spacing: 2px; text-shadow: 0 2px 2px rgba(0,0,0,0.8); }
+
+        .card-message-box { width: 100%; text-align: center; margin-bottom: 40px; }
+        .card-message { font-family: var(--font-serif); font-size: 22px; color: #fff; line-height: 1.8; font-weight: 300; font-style: italic; }
+        .quote-mark { color: var(--gold-primary); font-size: 30px; font-family: serif; opacity: 0.5; vertical-align: -5px; }
+
+        .card-footer { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 25px; }
+        .qr-container { background: transparent; padding: 0; }
+        .scan-hint { text-align: right; }
+        .scan-text { display: block; font-family: var(--font-tech); color: var(--gold-primary); font-size: 14px; letter-spacing: 2px; font-weight: bold; margin-bottom: 4px; }
+        .scan-sub { display: block; font-family: var(--font-tech); color: #555; font-size: 9px; letter-spacing: 1px; }
+
+        /* MODAL (For Fullscreen View) */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 1000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(5px);
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-content { max-width: 90%; max-height: 90%; border: 1px solid #333; overflow: hidden; border-radius: 8px; transform: scale(0.95); transition: transform 0.3s; }
+        .modal-overlay.active .modal-content { transform: scale(1); }
+        .modal-img { width: 100%; height: auto; display: block; }
+        .close-modal { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 30px; cursor: pointer; width: 40px; height: 40px; text-align: center; line-height: 40px; background: rgba(255,255,255,0.1); border-radius: 50%; }
+
     </style>
 </head>
 <body>
@@ -255,7 +291,6 @@
         </div>
 
         <div id="step2" class="form-section hidden">
-            
             <div class="input-group">
                 <label class="input-label" style="text-align: center; margin-bottom: 15px;">SELECT VISUALIZATION PROTOCOL</label>
                 <div class="gift-grid">
@@ -266,19 +301,17 @@
                         <span class="gift-icon">🎆</span><span class="gift-name">FIREWORK</span>
                     </div>
                     <div class="gift-option" onclick="selectGift('love')">
-                        <span class="gift-icon">❤️</span><span class="gift-name">LOVE<span class="platform-tag">(仅支持PC)</span></span>
+                        <span class="gift-icon">❤️</span><span class="gift-name">LOVE<span class="platform-tag">(PC)</span></span>
                     </div>
                     <div class="gift-option" onclick="selectGift('portal')">
-                        <span class="gift-icon">🔯</span><span class="gift-name">PORTAL<span class="platform-tag">(仅支持PC)</span></span>
+                        <span class="gift-icon">🔯</span><span class="gift-name">PORTAL<span class="platform-tag">(PC)</span></span>
                     </div>
                 </div>
             </div>
 
-
-
             <div class="input-group">
                 <label class="input-label">ENCODED MESSAGE (WISH)</label>
-                <textarea id="inputWish" class="access-input step-2-input" placeholder="e.g. Happy New Year!&#10;May all your dreams come true.&#10;Love you forever." maxlength="200"></textarea>
+                <textarea id="inputWish" class="access-input step-2-input" placeholder="e.g. Happy New Year!&#10;May all your dreams come true.&#10;Love you forever." maxlength="100"></textarea>
             </div>
 
             <div class="status-msg" id="status2">_READY TO INITIALIZE</div>
@@ -288,19 +321,23 @@
             </button>
 
             <div id="result-area" class="hidden">
-                <div class="result-title">
-                    <span>UNIVERSE CREATED</span>
-                    <span style="color:#0f0; font-size:10px;">● ONLINE</span>
+                <img id="resultCardPreview" class="generated-card-preview" alt="Generating Access Card..." onclick="openModal()">
+                <div class="save-tip">▲ CLICK TO EXPAND / LONG PRESS TO SAVE</div>
+
+                <div class="link-actions">
+                    <div class="result-title">
+                        <span>ACCESS LINK GENERATED</span>
+                        <span style="color:#0f0; font-size:10px;">● ONLINE</span>
+                    </div>
+                    <div id="generatedUrl" class="url-box">Generating...</div>
+                    <div class="btn-group">
+                        <button id="btnCopy" class="copy-btn" onclick="copyToClipboard()">
+                            <span id="copyIcon">📋</span> 
+                            <span id="copyText">COPY</span>
+                        </button>
+                        <a id="btnDirect" href="#" target="_blank" class="direct-btn">OPEN &gt;</a>
+                    </div>
                 </div>
-                
-                <div id="generatedUrl" class="url-box">Generating...</div>
-                
-                <button id="btnCopy" class="copy-btn" onclick="copyToClipboard()">
-                    <span id="copyIcon">📋</span> 
-                    <span id="copyText">COPY LINK</span>
-                </button>
-                
-                <a id="btnDirect" href="#" target="_blank" class="direct-link">Open Directly &gt;</a>
             </div>
 
         </div>
@@ -308,10 +345,48 @@
         <a href="index.html" class="back-link">&lt; TERMINATE SESSION</a>
     </div>
 
+    <div id="card-stage">
+        <div class="card-inner-frame"></div>
+        <div class="card-inner-frame-bl"></div>
+        <div class="card-header">
+            <div class="card-title">CYBER GIFT</div>
+            <div class="card-subtitle">DIGITAL VOWS // ENCRYPTED</div>
+        </div>
+        <div class="card-body">
+            <div class="ticket-type" id="cardTicketType">SINGLE PASS</div>
+            <div class="user-chip">
+                <span class="user-id-label">ACCESS ID</span>
+                <span class="user-id-val" id="cardUserId">NO.0000</span>
+            </div>
+            <div class="card-message-box">
+                <div class="card-message">
+                    <span class="quote-mark">“</span>
+                    <span id="cardMessageText">Happy New Year</span>
+                    <span class="quote-mark">”</span>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <div class="qr-container">
+                <div id="cardQrcode"></div>
+            </div>
+            <div class="scan-hint">
+                <span class="scan-text">SCAN TO DECRYPT</span>
+                <span class="scan-sub" id="cardDate">MINTED AT 2026.01.01</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="cardModal" onclick="closeModal(event)">
+        <div class="close-modal" onclick="closeModal(event)">×</div>
+        <div class="modal-content">
+            <img id="modalCardImg" class="modal-img" alt="Access Card">
+        </div>
+    </div>
+
     <script>
         // ================= 配置区域 =================
         const API_BASE = "https://vimalin.xyz:8443/api";
-        
         const GIFT_URLS = {
             'stars': "https://cybergift.store/stars/",
             'firework': "https://cybergift.store/firework/",
@@ -334,24 +409,34 @@
             status1: document.getElementById('status1'),
             status2: document.getElementById('status2'),
             options: document.querySelectorAll('.gift-option'),
+            
             resultArea: document.getElementById('result-area'),
             generatedUrl: document.getElementById('generatedUrl'),
             btnCopy: document.getElementById('btnCopy'),
             btnDirect: document.getElementById('btnDirect'),
             copyText: document.getElementById('copyText'),
-            copyIcon: document.getElementById('copyIcon')
+            copyIcon: document.getElementById('copyIcon'),
+            
+            // Card Elements
+            resultCardPreview: document.getElementById('resultCardPreview'),
+            cardStage: document.getElementById('card-stage'),
+            cardModal: document.getElementById('cardModal'),
+            modalCardImg: document.getElementById('modalCardImg'),
+            
+            cardUserId: document.getElementById('cardUserId'),
+            cardMessageText: document.getElementById('cardMessageText'),
+            cardQrcode: document.getElementById('cardQrcode'),
+            cardDate: document.getElementById('cardDate'),
+            cardTicketType: document.getElementById('cardTicketType')
         };
 
         // --- 事件绑定 ---
         UI.btn1.addEventListener('click', verifyCode);
         UI.inputCode.addEventListener('keypress', (e) => { if(e.key === 'Enter') verifyCode(); });
         UI.inputCode.addEventListener('input', () => resetStatus(UI.inputCode, UI.status1, "_WAITING FOR SIGNAL..."));
-        
-        // 绑定生成事件
         UI.btn2.addEventListener('click', finalizeGift);
-        // UI.inputWish.addEventListener('keypress', (e) => { if(e.key === 'Enter') finalizeGift(); });
 
-        // --- 逻辑 Step 1: 验证 ---
+        // --- Step 1: 验证 ---
         async function verifyCode() {
             const code = UI.inputCode.value.trim();
             if (!code) return triggerError(UI.inputCode, UI.status1, "ERROR: INPUT EMPTY");
@@ -381,11 +466,11 @@
             }
         }
 
-        // --- 逻辑 Step 2: 核销与生成 ---
+        // --- Step 2: 核销 & 自动生成 ---
         async function finalizeGift() {
             const wish = UI.inputWish.value.trim() || "Best Wishes";
 
-            setLoading(UI.btn2, true, "ENCRYPTING DATA...");
+            setLoading(UI.btn2, true, "INITIALIZING UNIVERSE...");
 
             try {
                 const payload = {
@@ -402,24 +487,23 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    // 1. 获取加密串
                     const encryptedCode = data.encryptedCode;
-                    
-                    // 2. 拼接链接
                     let targetBaseUrl = GIFT_URLS[selectedType];
                     const connector = targetBaseUrl.includes("?") ? "&" : "?";
                     finalLink = `${targetBaseUrl}${connector}code=${encryptedCode}`;
 
-                    // 3. 界面切换
-                    UI.btn2.classList.add('hidden'); // 隐藏生成按钮
-                    UI.resultArea.classList.remove('hidden'); // 显示结果区
-                    
-                    // 4. 填充结果
+                    // 1. 更新链接界面
                     UI.generatedUrl.innerText = finalLink;
                     UI.btnDirect.href = finalLink;
-                    UI.status2.innerText = "_GENERATION COMPLETE";
-                    
-                    // 5. 自动尝试复制
+                    UI.status2.innerText = "_DATA ENCRYPTED & MINTED";
+
+                    // 2. 自动生成卡片 (关键修改：在这里直接调用)
+                    setLoading(UI.btn2, true, "MINTING CARD..."); // 更新按钮文字
+                    await autoGenerateCard(wish);
+
+                    // 3. 界面切换
+                    UI.btn2.classList.add('hidden'); // 隐藏按钮
+                    UI.resultArea.classList.remove('hidden'); // 显示结果
                     copyToClipboard(true);
 
                 } else {
@@ -428,42 +512,94 @@
                     setLoading(UI.btn2, false, "RETRY GENERATION");
                 }
             } catch (error) {
+                console.error(error);
                 UI.status2.classList.add('text-error');
                 UI.status2.innerText = "SYSTEM FAILURE";
                 setLoading(UI.btn2, false, "RETRY GENERATION");
             }
         }
 
-        // --- 复制功能 ---
-        function copyToClipboard(isAuto = false) {
-            if (!finalLink) return;
+        // --- 核心：自动生成卡片逻辑 ---
+        async function autoGenerateCard(wishText) {
+            try {
+                // 1. 填充数据
+                UI.cardMessageText.innerText = wishText;
+                const randomId = Math.floor(Math.random() * 9000) + 1000;
+                UI.cardUserId.innerText = `NO.2026-${randomId}`;
+                const now = new Date();
+                const dateStr = now.toISOString().split('T')[0].replace(/-/g, '.');
+                UI.cardDate.innerText = `MINTED AT ${dateStr}`;
+                UI.cardTicketType.innerText = (selectedType === 'love') ? "COUPLE PASS" : "SINGLE PASS";
 
-            navigator.clipboard.writeText(finalLink).then(() => {
-                // 成功反馈
-                UI.btnCopy.classList.add('success');
-                UI.copyText.innerText = "COPIED SUCCESSFULLY";
-                UI.copyIcon.innerText = "✓";
-                
-                // 2秒后恢复按钮状态
-                setTimeout(() => {
-                    UI.btnCopy.classList.remove('success');
-                    UI.copyText.innerText = "COPY LINK";
-                    UI.copyIcon.innerText = "📋";
-                }, 2000);
-            }).catch(err => {
-                if (!isAuto) alert("Auto-copy failed. Please copy the link manually.");
-            });
+                // 2. 生成二维码
+                UI.cardQrcode.innerHTML = ""; 
+                new QRCode(UI.cardQrcode, {
+                    text: finalLink,
+                    width: 80,
+                    height: 80,
+                    colorDark : "#D4AF37",
+                    colorLight : "transparent", // 必须是透明以融合背景
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+
+                // 3. 等待资源就绪
+                // 关键修复：给二维码一点时间渲染到DOM中
+                await new Promise(resolve => setTimeout(resolve, 300));
+                await document.fonts.ready;
+
+                // 4. 截图
+                const canvas = await html2canvas(UI.cardStage, {
+                    scale: 3, 
+                    backgroundColor: null,
+                    useCORS: true,
+                    allowTaint: true, // 允许跨域图片(SVG DataURI)
+                    logging: false
+                });
+
+                // 5. 显示
+                const imgData = canvas.toDataURL("image/png");
+                UI.resultCardPreview.src = imgData;
+                UI.modalCardImg.src = imgData;
+
+                return true;
+
+            } catch (err) {
+                console.error("Card Gen Error:", err);
+                // 即使生成失败，也不要阻断流程，放一张占位图或仅显示链接
+                UI.resultCardPreview.alt = "Card generation failed.";
+                return false;
+            }
         }
 
         // --- 辅助函数 ---
+        function openModal() { UI.cardModal.classList.add('active'); }
+        function closeModal(e) { 
+            if(e.target === UI.cardModal || e.target.classList.contains('close-modal')) 
+                UI.cardModal.classList.remove('active'); 
+        }
+
+        function copyToClipboard(isAuto = false) {
+            if (!finalLink) return;
+            navigator.clipboard.writeText(finalLink).then(() => {
+                UI.btnCopy.classList.add('success');
+                UI.copyText.innerText = "COPIED";
+                UI.copyIcon.innerText = "✓";
+                setTimeout(() => {
+                    UI.btnCopy.classList.remove('success');
+                    UI.copyText.innerText = "COPY";
+                    UI.copyIcon.innerText = "📋";
+                }, 2000);
+            }).catch(err => {
+                if (!isAuto) alert("Copy failed.");
+            });
+        }
+
         window.selectGift = function(type) {
             selectedType = type;
             UI.options.forEach(opt => opt.classList.remove('selected'));
-            // 这里简单遍历匹配，实际可用 data-type 属性更优雅
             if(type==='stars') UI.options[0].classList.add('selected');
             if(type==='firework') UI.options[1].classList.add('selected');
             if(type==='love') UI.options[2].classList.add('selected');
-            // 新增：处理法阵选项
             if(type==='portal') UI.options[3].classList.add('selected');
             UI.status2.innerText = `_TARGET LOCKED: ${type.toUpperCase()}`;
         };

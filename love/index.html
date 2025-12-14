@@ -28,6 +28,8 @@
             background-color: #000;
             font-family: 'Microsoft YaHei', sans-serif;
             touch-action: none; 
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         #world {
@@ -36,44 +38,47 @@
             width: 100vw; height: 100vh;
             background: #000;
             overflow: hidden;
+            transform-origin: center center;
+            transition: transform 0.5s ease;
+        }
+
+        /* === 手机强制横屏样式 === */
+        body.mobile-mode #world {
+            width: 100vh;
+            height: 100vw;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(90deg);
         }
 
         #three-canvas { display: block; width: 100%; height: 100%; }
         
-        /* === 调试预览窗口 === */
+        /* 调试窗口 (PC端保留，手机端隐藏) */
         #video-container {
             position: absolute;
             bottom: 20px; left: 20px;
-            /* 手机上稍微大一点，方便看红线 */
             width: 140px; height: 186px; 
-            border: 2px solid rgba(255, 105, 180, 0.5); /* 粉色边框提示这是调试区 */
+            border: 2px solid rgba(255, 105, 180, 0.5);
             border-radius: 8px;
             overflow: hidden;
             z-index: 10;
             opacity: 0; 
-            transform: scaleX(-1); /* 镜像翻转，符合照镜子习惯 */
+            transform: scaleX(-1);
             pointer-events: none;
             transition: opacity 1s;
             background: #000;
+            display: none; 
         }
         
-        /* 视频层 */
-        #input_video { 
+        #input_video, #debug_canvas { 
             position: absolute; top:0; left:0; width: 100%; height: 100%; 
             object-fit: cover; 
-        }
-        
-        /* 绘制骨骼层 (天眼) */
-        #debug_canvas {
-            position: absolute; top:0; left:0; width: 100%; height: 100%; 
-            object-fit: cover;
         }
 
         #ui-container {
             position: absolute;
-            top: 70%; left: 0; 
+            top: 65%; left: 0; 
             width: 100%;
-            transform: translateY(-50%);
             text-align: center;
             pointer-events: none;
             z-index: 5;
@@ -88,25 +93,26 @@
             color: rgba(255, 180, 200, 0.9);
             font-size: 16px; 
             letter-spacing: 2px;
-            text-shadow: 0 0 15px rgba(255, 50, 150, 0.6);
+            text-shadow: 0 0 15px rgba(255, 50, 150, 0.8);
             margin-bottom: 20px;
-            font-weight: 400;
+            font-weight: 600;
             text-transform: uppercase;
         }
 
         #progress-bar-bg {
-            width: 150px; height: 3px;
-            background: rgba(255,255,255,0.15);
-            border-radius: 1.5px;
+            width: 200px; height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
             overflow: hidden;
             opacity: 0;
             transition: opacity 0.3s;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
         
         #progress-bar {
             width: 0%; height: 100%;
-            background: linear-gradient(90deg, #ff3366, #ff99cc);
-            box-shadow: 0 0 15px #ff3366;
+            background: linear-gradient(90deg, #ff0055, #ff99cc, #fff);
+            box-shadow: 0 0 20px #ff0055;
             transition: width 0.1s linear;
         }
 
@@ -120,48 +126,24 @@
             transition: opacity 0.8s ease;
         }
 
-        /* 少女粉按钮 */
         #overlay {
             display: inline-block;
             color: rgba(255, 240, 245, 1);
-            font-size: 16px;
+            font-size: 18px;
             letter-spacing: 4px;
             cursor: pointer;
             background: rgba(80, 20, 40, 0.6); 
             backdrop-filter: blur(12px);
-            padding: 18px 40px; 
+            padding: 20px 50px; 
             border-radius: 100px;
-            border: 1px solid rgba(255, 105, 180, 0.4);
-            box-shadow: 0 0 30px rgba(255, 20, 147, 0.3);
-            transition: transform 0.2s, box-shadow 0.3s, background 0.3s;
-            font-weight: 400;
+            border: 1px solid rgba(255, 105, 180, 0.6);
+            box-shadow: 0 0 40px rgba(255, 20, 147, 0.5);
+            transition: transform 0.2s;
+            font-weight: bold;
             text-transform: uppercase;
-            white-space: nowrap;
-            position: relative;
-            overflow: hidden;
-            -webkit-tap-highlight-color: transparent; 
-        }
-
-        #overlay:hover {
-            background: rgba(100, 20, 50, 0.7);
-            border-color: rgba(255, 182, 193, 0.8);
-            box-shadow: 0 0 50px rgba(255, 105, 180, 0.6); 
-            transform: scale(1.02);
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
         }
 
         #overlay:active { transform: scale(0.95); }
-
-        #overlay::before {
-            content: ''; position: absolute;
-            top: var(--y, 50%); left: var(--x, 50%);
-            transform: translate(-50%, -50%);
-            width: 150px; height: 150px;
-            background: radial-gradient(circle, rgba(255, 192, 203, 0.4) 0%, transparent 70%);
-            opacity: 0; transition: opacity 0.3s;
-            pointer-events: none; mix-blend-mode: overlay; 
-        }
-        #overlay:hover::before { opacity: 1; }
 
         #start-subtext {
             margin-top: 20px;
@@ -169,8 +151,6 @@
             color: rgba(255, 182, 193, 0.5);
             letter-spacing: 1px;
             cursor: pointer;
-            text-decoration: none;
-            transition: color 0.3s;
         }
 
         #watermark {
@@ -219,30 +199,105 @@
             font-size: 12px; letter-spacing: 2px;
         }
 
-        #debug-info {
+        /* === 手机端触控按钮 === */
+        #mobile-controls {
+            display: none; /* 仅手机端显示 */
             position: absolute;
-            top: 10px; left: 10px;
-            color: lime; font-size: 10px;
-            z-index: 100;
-            pointer-events: none;
-            background: rgba(0,0,0,0.5);
-            padding: 2px;
-            display: none; /* 调试完可关闭 */
+            bottom: 80px; /* 位置调高一点 */
+            left: 0;
+            width: 100%;
+            height: 120px;
+            z-index: 30;
+            justify-content: center; /* 居中对齐，动态调整间距 */
+            align-items: center;
+            pointer-events: none; 
+            gap: 60px; /* 初始间距 */
         }
+        
+        .touch-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 105, 180, 0.4);
+            background: radial-gradient(circle, rgba(255,105,180,0.2) 0%, transparent 60%);
+            pointer-events: auto;
+            position: relative;
+            transition: transform 0.1s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(255, 105, 180, 0.2);
+        }
+
+        /* 按钮内的箭头提示 */
+        .touch-btn::before {
+            content: '';
+            position: absolute;
+            width: 0; height: 0;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            opacity: 0.8;
+            /* 保持原有箭头样式，虽然逻辑变为上下拉，但为了最小化改动保留原样或可自行修改为上下箭头 */
+        }
+        
+        /* 左按钮 */
+        #btn-left::before {
+            border-right: 10px solid #fff;
+            left: 20px;
+        }
+        /* 右按钮 */
+        #btn-right::before {
+            border-left: 10px solid #fff;
+            right: 20px;
+        }
+        
+        .touch-btn::after {
+            content: '';
+            width: 40px; height: 40px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            box-shadow: 0 0 15px #ff3366;
+            opacity: 0.3;
+            transition: all 0.2s;
+        }
+
+        .touch-btn.active {
+            border-color: #fff;
+            background: rgba(255, 50, 100, 0.3);
+            box-shadow: 0 0 30px rgba(255, 50, 100, 0.6);
+        }
+        
+        .touch-btn.active::after {
+            opacity: 1;
+            transform: scale(1.2);
+            box-shadow: 0 0 25px #ff0055;
+            background: #fff;
+        }
+
+        /* 手机旋转后的UI微调 */
+        body.mobile-mode #ui-container {
+            top: 45%; 
+        }
+
     </style>
 </head>
 <body>
 
 <div id="world">
     <div id="start-container">
-        <div id="overlay" onclick="startExperience()" onmousemove="moveGlow(event)" ontouchmove="moveGlow(event)">✨ 开启 2026 魔法 ✨</div>
-        <div id="loading-text">正在唤醒 AI (手机请允许摄像头)...</div>
+        <div id="overlay" onclick="startExperience()">✨ 开启 2026 魔法 ✨</div>
+        <div id="loading-text">正在唤醒...</div>
         <div id="start-subtext" onclick="goBuy()">Powered by 七叶怀瑾</div>
     </div>
 
     <div id="ui-container">
         <div id="ui-hint">请竖屏并将手举高</div>
         <div id="progress-bar-bg"><div id="progress-bar"></div></div>
+    </div>
+
+    <div id="mobile-controls">
+        <div id="btn-left" class="touch-btn"></div>
+        <div id="btn-right" class="touch-btn"></div>
     </div>
 
     <div id="video-container">
@@ -257,8 +312,6 @@
 
     <canvas id="three-canvas"></canvas>
     <canvas id="textCanvas" width="512" height="256" style="display:none;"></canvas>
-    
-    <div id="debug-info">Init...</div>
 </div>
 
 <script type="module">
@@ -269,34 +322,42 @@
 
     // === 检测是否为手机 ===
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const debugInfo = document.getElementById('debug-info');
     
+    if (isMobile) {
+        document.body.classList.add('mobile-mode');
+        // 修改提示语
+        document.getElementById('ui-hint').innerText = "按住按钮 上下方向拉开";
+    }
+
     // === 配置区域 ===
     const CONFIG = {
         handCloudColor: 0xff66aa,  
-        heartColorA: 0xff0033,     
-        heartColorB: 0xff99cc,     
+        heartColorA: 0xff0033,      
+        heartColorB: 0xff99cc,      
 
-        bloomStrength: isMobile ? 1.0 : 1.4,        
-        bloomRadius: 0.4,          
+        // 【修改1】大幅增强手机端辉光，让它发光！
+        bloomStrength: isMobile ? 2.5 : 1.4,        
+        bloomRadius: isMobile ? 0.6 : 0.4,          
         
-        handParticleCount: isMobile ? 800 : 1500,   
-        handParticleSize: isMobile ? 3.5 : 2.5,   
+        handParticleCount: isMobile ? 1200 : 1500,   
+        handParticleSize: isMobile ? 4.5 : 2.5,  // 粒子更大 
 
         connectThreshold: 4.0,    
-        gestureHoldTime: 80, 
         
-        morphParticleCount: isMobile ? 12000 : 25000, 
+        // 【修改】：5秒进度条。满速充能(speed=2)时，600/2 = 300帧 = 5秒 
+        gestureHoldTime: 600, 
+        
+        morphParticleCount: isMobile ? 15000 : 25000, 
         textPhrases: ["I LOVE U", "FOREVER"], 
-        textDisplayTime: 4.0,      
-        beatsToPerform: 3,         
+        textDisplayTime: 4.0,       
+        beatsToPerform: 3,          
 
         handAttractStrength: 0.5,  
-        handSwirlSpeed: 0.6,       
-        handSpreadCharging: isMobile ? 5.0 : 7.0,   
-        handSpreadNormal: isMobile ? 12.0 : 17.0,    
+        handSwirlSpeed: 0.6,        
+        handSpreadCharging: isMobile ? 6.0 : 7.0,    
         
-        cameraZ: isMobile ? 90 : 70 
+        // 【修改3】拉近相机，让整体物体显得更大
+        cameraZ: isMobile ? 55 : 70 
     };
 
     const BUY_LINK = "../#buy"; 
@@ -312,26 +373,24 @@
     let currentState = STATE.SEARCHING;
     let chargeCounter = 0;
     let handsData = [];
-    let gestureCenter = new THREE.Vector3();
+    let gestureCenter = new THREE.Vector3(0, 0, 0); 
     let isRunning = false; 
+
+    // === 手机端触控状态 ===
+    // === 手机端触控状态 === 
+    // 【修改】：将坐标记录改回 X 轴 
+    let touchState = { 
+        leftPressed: false, 
+        rightPressed: false, 
+        leftX: 0, 
+        rightX: 0, 
+        startXL: 0, 
+        startXR: 0, 
+        dragFactor: 0 // 0 = 没拉, 1 = 拉满 
+    };
 
     // === 全局函数 ===
     window.goBuy = function() { window.location.href = BUY_LINK; };
-    
-    window.moveGlow = function(e) {
-        const btn = e.currentTarget;
-        const rect = btn.getBoundingClientRect();
-        let clientX = e.clientX;
-        let clientY = e.clientY;
-        if(e.touches && e.touches.length > 0) {
-            clientX = e.touches[0].clientX;
-            clientY = e.touches[0].clientY;
-        }
-        const x = clientX - rect.left;
-        const y = clientY - rect.top;
-        btn.style.setProperty('--x', x + 'px');
-        btn.style.setProperty('--y', y + 'px');
-    };
 
     window.startExperience = async function() {
         const overlay = document.getElementById('overlay');
@@ -341,21 +400,31 @@
         loadingText.style.display = 'block';
 
         initThreeJS();
-        try {
-            loadingText.innerText = "正在加载 AI 模型...";
-            await initMediaPipe();
-        } catch (error) {
-            console.error(error);
-            loadingText.innerText = "摄像头启动失败，请检查 HTTPS";
-            return;
-        }
 
+        if (isMobile) {
+            loadingText.innerText = "正在初始化魔法粒子...";
+            initMobileControls();
+            document.getElementById('mobile-controls').style.display = 'flex';
+            setTimeout(startGameLoop, 500);
+        } else {
+            try {
+                loadingText.innerText = "正在加载 AI 模型...";
+                await initMediaPipe();
+                document.getElementById('video-container').style.display = 'block';
+                document.getElementById('video-container').style.opacity = '0.6';
+                startGameLoop();
+            } catch (error) {
+                console.error(error);
+                loadingText.innerText = "摄像头启动失败，请检查 HTTPS";
+                return;
+            }
+        }
+    };
+
+    function startGameLoop() {
         const startContainer = document.getElementById('start-container');
         startContainer.style.opacity = '0';
         setTimeout(() => startContainer.style.display = 'none', 800);
-
-        // 显示左下角的调试窗口
-        document.getElementById('video-container').style.opacity = '0.6';
         document.getElementById('ui-container').style.opacity = '1';
         
         if (!isPaidUser) {
@@ -365,10 +434,120 @@
                 setTimeout(() => ad.classList.add('visible'), 2000);
             }
         }
-        
         isRunning = true;
         animate();
-    };
+    }
+
+    // === 手机端交互逻辑重写：按住 -> 上下长边往外拉 ===
+    function initMobileControls() {
+        const btnL = document.getElementById('btn-left');
+        const btnR = document.getElementById('btn-right');
+
+        // 通用触摸处理
+        const handleTouch = (e, isLeft, isStart) => {
+            // 阻止默认行为防止滚动
+            if(e.type !== 'mousedown') e.preventDefault(); 
+            
+            const touch = e.touches ? e.touches[0] : e;
+            // 【关键修改】：获取 Y轴 (纵向) 坐标 
+            const clientY = touch.clientY;
+
+            if (isStart) {
+                if(isLeft) {
+                    touchState.leftPressed = true;
+                    touchState.startYL = clientY;
+                    touchState.leftY = clientY;
+                    btnL.classList.add('active');
+                } else {
+                    touchState.rightPressed = true;
+                    touchState.startYR = clientY;
+                    touchState.rightY = clientY;
+                    btnR.classList.add('active');
+                }
+            } else {
+                // End：松手复位 
+                if(isLeft) {
+                    touchState.leftPressed = false;
+                    btnL.classList.remove('active');
+                    btnL.style.transform = `translateY(0px)`;
+                } else {
+                    touchState.rightPressed = false;
+                    btnR.classList.remove('active');
+                    btnR.style.transform = `translateY(0px)`;
+                }
+            }
+            updateMobileState();
+        };
+
+        // 监听移动事件 (在window上监听以防止手指移出按钮范围)
+        window.addEventListener('touchmove', (e) => {
+            if (!isRunning || !isMobile) return;
+            for (let i = 0; i < e.touches.length; i++) {
+                const t = e.touches[i];
+                
+                // 【关键修改】：使用屏幕高度的一半来区分手指是在控制"左按钮"还是"右按钮" 
+                // 因为手机是竖着拿的，"左按钮"(视觉上)其实在屏幕的上半部分(物理上) 
+                // "右按钮"(视觉上)其实在屏幕的下半部分(物理上) 
+                const halfH = window.innerHeight / 2;
+                
+                // 控制左按钮（也就是屏幕上半部分的那个）：只能往上拉（Y值变小） 
+                // 这里的判定范围设为 < halfH + 50 是为了防止手指稍微滑过界就失效 
+                if (touchState.leftPressed && t.clientY < halfH + 100) {
+                    touchState.leftY = t.clientY;
+                    // 往上拉是负数 (clientY 变小) 
+                    const delta = Math.min(0, t.clientY - touchState.startYL);
+                    btnL.style.transform = `translateY(${delta}px)`;
+                }
+                
+                // 控制右按钮（也就是屏幕下半部分的那个）：只能往下拉（Y值变大） 
+                if (touchState.rightPressed && t.clientY > halfH - 100) {
+                    touchState.rightY = t.clientY;
+                    // 往下拉是正数 (clientY 变大) 
+                    const delta = Math.max(0, t.clientY - touchState.startYR);
+                    btnR.style.transform = `translateY(${delta}px)`;
+                }
+            }
+            updateMobileState();
+        }, {passive: false});
+
+        // 绑定按钮开始/结束事件 
+        btnL.addEventListener('touchstart', (e) => handleTouch(e, true, true), {passive:false});
+        btnL.addEventListener('touchend', (e) => handleTouch(e, true, false));
+        btnR.addEventListener('touchstart', (e) => handleTouch(e, false, true), {passive:false});
+        btnR.addEventListener('touchend', (e) => handleTouch(e, false, false));
+        
+        // 鼠标兼容调试（电脑测试用） 
+        btnL.addEventListener('mousedown', (e) => handleTouch(e, true, true));
+        window.addEventListener('mouseup', (e) => {
+            if(touchState.leftPressed) handleTouch(e, true, false);
+            if(touchState.rightPressed) handleTouch(e, false, false);
+        });
+    }
+
+    function updateMobileState() {
+        if (currentState === STATE.ACTIVE) return;
+        
+        if (touchState.leftPressed && touchState.rightPressed) {
+            // 计算拉开距离 - 【修改】：使用 Y 轴差值
+            // 左边向上拉(Y变小)是负数，右边向下拉(Y变大)是正数
+            // deltaL = Start - Current (向上拉，Start > Current, 结果为正表示拉开距离)
+            // deltaR = Current - Start (向下拉，Current > Start, 结果为正表示拉开距离)
+            
+            const deltaL = touchState.startYL - touchState.leftY; 
+            const deltaR = touchState.rightY - touchState.startYR; 
+            
+            const totalDrag = Math.max(0, deltaL) + Math.max(0, deltaR);
+            // 假设拉开 100px 算满
+            const maxDrag = 150; 
+            touchState.dragFactor = Math.min(1.0, totalDrag / maxDrag);
+            
+            currentState = STATE.CHARGING;
+        } else {
+            touchState.dragFactor = 0;
+            currentState = (touchState.leftPressed || touchState.rightPressed) ? STATE.ALIGNING : STATE.SEARCHING;
+            chargeCounter = Math.max(0, chargeCounter - 10); // 松手掉得快
+        }
+    }
 
     async function fetchDecryptedPayload() {
         const params = new URLSearchParams(window.location.search);
@@ -408,7 +587,7 @@
         const canvas = document.getElementById('three-canvas');
         renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(isMobile ? 1 : Math.min(window.devicePixelRatio, 2));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
         scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x050008, 0.015);
@@ -417,10 +596,11 @@
         camera.position.set(0, 0, CONFIG.cameraZ);
 
         const renderScene = new RenderPass(scene, camera);
+        // Bloom 参数在 Config 中根据手机调整了
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
         bloomPass.strength = CONFIG.bloomStrength;
         bloomPass.radius = CONFIG.bloomRadius;
-        bloomPass.threshold = 0.1;
+        bloomPass.threshold = 0.05; // 阈值降低，更容易发光
 
         composer = new EffectComposer(renderer);
         composer.addPass(renderScene);
@@ -431,68 +611,47 @@
         morphSystem = new MorphingParticleSystem();
 
         window.addEventListener('resize', onResize);
+        if(isMobile) onResize(); 
     }
 
     function onResize() {
-        camera.aspect = window.innerWidth / window.innerHeight;
+        let w, h;
+        if (isMobile) {
+            w = window.innerHeight; 
+            h = window.innerWidth;  
+            renderer.setSize(w, h);
+            composer.setSize(w, h);
+            camera.aspect = w / h;
+        } else {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+        }
         camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        composer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    // === 【核心修改】MediaPipe 初始化 ===
+    // === MediaPipe 初始化 (仅PC) ===
     async function initMediaPipe() {
         const videoElement = document.getElementById('input_video');
         const debugCanvas = document.getElementById('debug_canvas');
         const debugCtx = debugCanvas.getContext('2d');
-
         const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-        
-        hands.setOptions({
-            maxNumHands: 2, 
-            modelComplexity: 1, // 手机上也使用 1，防止 Lite 版本在某些光线下太蠢
-            minDetectionConfidence: 0.5, 
-            minTrackingConfidence: 0.5
-        });
-        
+        hands.setOptions({maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5});
         hands.onResults((results) => {
-            // 1. 将数据传给 Three.js
-            onResults(results);
-
-            // 2. 【新增】在左下角画出红色的手部骨骼 (天眼功能)
+            onHandResults(results);
             debugCtx.save();
             debugCtx.clearRect(0, 0, debugCanvas.width, debugCanvas.height);
             debugCtx.drawImage(results.image, 0, 0, debugCanvas.width, debugCanvas.height);
-            
             if (results.multiHandLandmarks) {
                 for (const landmarks of results.multiHandLandmarks) {
-                    drawConnectors(debugCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 2}); // 绿色骨骼
-                    drawLandmarks(debugCtx, landmarks, {color: '#FF0000', lineWidth: 1, radius: 2}); // 红色关节
+                    drawConnectors(debugCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 2}); 
+                    drawLandmarks(debugCtx, landmarks, {color: '#FF0000', lineWidth: 1, radius: 2}); 
                 }
             }
             debugCtx.restore();
-            
-            // 更新调试信息
-            debugInfo.innerText = `Hands: ${results.multiHandLandmarks.length}`;
         });
-        
-        // 【关键】为手机设置竖屏分辨率，不要用 320x240
-        const w = isMobile ? 360 : 640;
-        const h = isMobile ? 480 : 480;
-
-        const cameraUtils = new Camera(videoElement, { 
-            onFrame: async () => { await hands.send({image: videoElement}); }, 
-            width: w, 
-            height: h,
-            facingMode: 'user'
-        });
-        
-        // 设置画布尺寸匹配视频
-        videoElement.onloadedmetadata = () => {
-             debugCanvas.width = videoElement.videoWidth;
-             debugCanvas.height = videoElement.videoHeight;
-        };
-        
+        const cameraUtils = new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 640, height: 480, facingMode: 'user'});
+        videoElement.onloadedmetadata = () => { debugCanvas.width = videoElement.videoWidth; debugCanvas.height = videoElement.videoHeight; };
         await cameraUtils.start();
     }
 
@@ -500,8 +659,9 @@
         const c = document.createElement('canvas'); c.width=64; c.height=64;
         const ctx = c.getContext('2d');
         const g = ctx.createRadialGradient(32,32,0,32,32,32);
+        // 让核心更亮，配合Bloom
         g.addColorStop(0, 'rgba(255,255,255,1)');
-        g.addColorStop(0.4, 'rgba(255,220,230,0.3)');
+        g.addColorStop(0.2, 'rgba(255,200,220,0.8)');
         g.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = g; ctx.fillRect(0,0,64,64);
         return new THREE.CanvasTexture(c);
@@ -539,55 +699,76 @@
             for(let i=0; i<this.count; i++) this.velocities.push({x:0, y:0, z:0});
         }
 
-        update(targetPos, isDetected, isCharging, chargeCenter, progress) {
+        update(targetPos, isDetected, isCharging, chargeCenter, progress, dragSpeedFactor = 0) {
             const positions = this.geo.attributes.position.array;
-            const targetOpacity = (isDetected && currentState !== STATE.ACTIVE) ? 0.8 : 0;
+            
+            // 手机端始终有点可见度
+            let targetOpacity;
+            if (isMobile) {
+                targetOpacity = currentState === STATE.ACTIVE ? 0 : (isDetected ? 1.0 : 0.3);
+            } else {
+                targetOpacity = (isDetected && currentState !== STATE.ACTIVE) ? 0.8 : 0;
+            }
+
             this.mat.opacity += (targetOpacity - this.mat.opacity) * 0.1;
             if (this.mat.opacity < 0.01) return;
 
-            const spread = isCharging ? CONFIG.handSpreadCharging : CONFIG.handSpreadNormal;
-            const attractStrength = isCharging ? CONFIG.handAttractStrength : 0.08; 
-            const attractPoint = isCharging ? chargeCenter : targetPos;
+            // 手机端：按下后粒子去中心，否则在按钮处
+            // 如果 isCharging (Mobile模式下指双按了)，则目标点强制设为中心
+            const effectiveAttractPoint = (isMobile && isCharging) ? chargeCenter : targetPos;
+            const spread = isCharging ? CONFIG.handSpreadCharging : (isMobile ? 8.0 : CONFIG.handSpreadNormal);
+            const attractStrength = isCharging ? 0.3 : 0.1;
 
             for(let i=0; i<this.count; i++) {
                 const idx = i*3;
                 const v = this.velocities[i];
                 const px = positions[idx]; const py = positions[idx+1]; const pz = positions[idx+2];
 
-                v.x += (attractPoint.x - px) * attractStrength * 0.1;
-                v.y += (attractPoint.y - py) * attractStrength * 0.1;
-                v.z += (attractPoint.z - pz) * attractStrength * 0.1;
+                // 1. 引力：飞向目标
+                v.x += (effectiveAttractPoint.x - px) * attractStrength * 0.1;
+                v.y += (effectiveAttractPoint.y - py) * attractStrength * 0.1;
+                v.z += (effectiveAttractPoint.z - pz) * attractStrength * 0.1;
 
+                // 2. 旋转：【关键修改】速度根据拉开距离(dragSpeedFactor)变化
                 if (isCharging) {
-                    const swirlSpeed = CONFIG.handSwirlSpeed + progress * 0.5;
+                    // 基础速度 + 拉开带来的狂暴速度
+                    let baseSpeed = isMobile ? 0.2 : CONFIG.handSwirlSpeed; 
+                    let speedMult = isMobile ? (baseSpeed + dragSpeedFactor * 2.5) : (CONFIG.handSwirlSpeed + progress * 0.5);
+                    
                     const rx = px - chargeCenter.x;
                     const ry = py - chargeCenter.y;
-                    v.x += -ry * swirlSpeed * 0.1;
-                    v.y += rx * swirlSpeed * 0.1;
-                    v.z -= (pz - chargeCenter.z) * 0.1; 
+                    
+                    // 粒子绕圈逻辑
+                    v.x += -ry * speedMult * 0.1;
+                    v.y += rx * speedMult * 0.1;
+                    v.z -= (pz - chargeCenter.z) * 0.05; // 稍微压扁在Z轴
                 }
 
                 v.x += (Math.random()-0.5) * 0.2; 
                 v.y += (Math.random()-0.5) * 0.2;
                 v.z += (Math.random()-0.5) * 0.2;
 
-                const damping = 0.8;
+                const damping = 0.85; // 阻尼稍微小点，让粒子更滑
                 v.x *= damping; v.y *= damping; v.z *= damping;
 
                 positions[idx] += v.x;
                 positions[idx+1] += v.y;
                 positions[idx+2] += v.z;
                 
+                // 限制范围
                 if (isCharging) {
-                    const dx = positions[idx] - attractPoint.x;
-                    const dy = positions[idx+1] - attractPoint.y;
-                    const dz = positions[idx+2] - attractPoint.z;
+                    const dx = positions[idx] - effectiveAttractPoint.x;
+                    const dy = positions[idx+1] - effectiveAttractPoint.y;
+                    const dz = positions[idx+2] - effectiveAttractPoint.z;
                     const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
-                    if (dist > spread * 2.0) {
-                            const ratio = (spread * 2.0) / dist;
-                            positions[idx] = attractPoint.x + dx * ratio;
-                            positions[idx+1] = attractPoint.y + dy * ratio;
-                            positions[idx+2] = attractPoint.z + dz * ratio;
+                    
+                    // 拉开距离越大，圈子可以稍微大一点点
+                    const dynamicSpread = spread * (1 + dragSpeedFactor * 0.3);
+                    if (dist > dynamicSpread * 2.0) {
+                        const ratio = (dynamicSpread * 2.0) / dist;
+                        positions[idx] = effectiveAttractPoint.x + dx * ratio;
+                        positions[idx+1] = effectiveAttractPoint.y + dy * ratio;
+                        positions[idx+2] = effectiveAttractPoint.z + dz * ratio;
                     }
                 }
             }
@@ -613,6 +794,8 @@
                 pos[i*3+2] = (Math.random()-0.5)*300;
                 const ratio = Math.random();
                 const c = cA.clone().lerp(cB, ratio);
+                // 增强颜色亮度
+                c.multiplyScalar(1.5);
                 cols[i*3] = c.r; cols[i*3+1] = c.g; cols[i*3+2] = c.b;
                 sizes[i] = Math.random() * 1.5 + 0.5;
             }
@@ -635,7 +818,6 @@
             this.animState = 'HIDDEN';
             this.beatCount = 0;
             this.textIndex = 0;
-            this.lastStateChangeTime = 0; 
         }
 
         generateHeartTargets() {
@@ -645,7 +827,9 @@
                 let x = 16 * Math.pow(Math.sin(t), 3);
                 let y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
                 let z = (Math.random() - 0.5) * 8 * r;
-                x *= r * 1.3; y *= r * 1.3;
+                x *= r * 1.5; y *= r * 1.5; // 心形也放大
+                if(isMobile) { x *= 1.2; y *= 1.2; } // 手机再大点
+                
                 this.targets.heart[i*3] = x;
                 this.targets.heart[i*3+1] = y;
                 this.targets.heart[i*3+2] = z;
@@ -662,19 +846,17 @@
                 ctx.fillStyle = '#000'; ctx.fillRect(0,0,w,h);
                 ctx.fillStyle = '#fff';
                 
-                // === 修改开始：自动换行逻辑 ===
-                const baseFontSize = 50; // 基础字号
+                const baseFontSize = isMobile ? 70 : 50; // 字号放大
                 ctx.font = `bold ${baseFontSize}px Arial`;
                 ctx.textAlign = 'center'; 
                 ctx.textBaseline = 'middle';
 
-                const maxWidth = w * 0.9; // 留出10%边距
+                const maxWidth = w * 0.9; 
                 const lineHeight = baseFontSize * 1.2;
-                const words = phrase.split(''); // 按字分割（兼容中文和英文），如果是纯英文可以用 ' '
+                const words = phrase.split(''); 
                 let lines = [];
                 let currentLine = words[0];
 
-                // 逐字测量宽度，决定是否换行
                 for (let i = 1; i < words.length; i++) {
                     const char = words[i];
                     const width = ctx.measureText(currentLine + char).width;
@@ -687,15 +869,12 @@
                 }
                 lines.push(currentLine);
 
-                // 计算垂直居中的起始位置
                 const totalHeight = lines.length * lineHeight;
                 const startY = (h - totalHeight) / 2 + (lineHeight / 2);
 
-                // 绘制每一行
                 lines.forEach((line, i) => {
                     ctx.fillText(line, w/2, startY + i * lineHeight);
                 });
-                // === 修改结束 ===
 
                 const data = ctx.getImageData(0,0,w,h).data;
                 const validPixels = [];
@@ -708,11 +887,10 @@
                 
                 const textTarget = new Float32Array(this.count * 3);
                 for(let i=0; i<this.count; i++) {
-                    // 如果像素点不够（文字很少），随机取点填补
                     const p = validPixels[i % validPixels.length] || {x:w/2, y:h/2};
-                    textTarget[i*3] = (p.x / w - 0.5) * 80;
-                    textTarget[i*3+1] = -(p.y / h - 0.5) * 40;
-                    textTarget[i*3+2] = (Math.random()-0.5) * 2; 
+                    textTarget[i*3] = (p.x / w - 0.5) * 90; // 范围放大
+                    textTarget[i*3+1] = -(p.y / h - 0.5) * 50;
+                    textTarget[i*3+2] = (Math.random()-0.5) * 5; 
                 }
                 this.targets.texts.push(textTarget);
             });
@@ -821,42 +999,85 @@
         const isCharging = currentState === STATE.CHARGING;
         const progress = chargeCounter / CONFIG.gestureHoldTime;
 
-        let lTarget = new THREE.Vector3(-999,0,0);
-        let rTarget = new THREE.Vector3(999,0,0);
-        let lDetected = false; let rDetected = false;
+        if (isMobile) {
+            // 手机逻辑
+            // 按钮默认位置 (3D)
+            let lTarget = new THREE.Vector3(-20, -30, 0); 
+            let rTarget = new THREE.Vector3(20, -30, 0);
+            
+            // 传递 dragFactor 影响旋转速度
+            handL.update(lTarget, touchState.leftPressed, isCharging, gestureCenter, progress, touchState.dragFactor);
+            handR.update(rTarget, touchState.rightPressed, isCharging, gestureCenter, progress, touchState.dragFactor);
 
-        if (handsData.length > 0) {
-            for(let hand of handsData) {
-                const pos = mapToWorld(hand[9].x, hand[9].y);
-                if (hand[9].x > 0.5) { lTarget.copy(pos); lDetected = true; } 
-                else { rTarget.copy(pos); rDetected = true; }
+            // 进度逻辑：只有拉得足够远，进度条才走
+            if (isCharging) {
+                if (touchState.dragFactor > 0.3) {
+                    // 拉得越远走得越快，但有最大限制
+                    const speed = 0.5 + touchState.dragFactor * 1.5; 
+                    chargeCounter += speed;
+                } else {
+                    // 没拉开就慢慢掉
+                    chargeCounter = Math.max(0, chargeCounter - 1);
+                }
+                if (chargeCounter > CONFIG.gestureHoldTime) triggerSequence();
+            } 
+
+        } else {
+            // PC 逻辑
+            let lTarget = new THREE.Vector3(-999,0,0);
+            let rTarget = new THREE.Vector3(999,0,0);
+            let lDetected = false; let rDetected = false;
+
+            if (handsData.length > 0) {
+                for(let hand of handsData) {
+                    const pos = mapToWorld(hand[9].x, hand[9].y);
+                    if (hand[9].x > 0.5) { lTarget.copy(pos); lDetected = true; } 
+                    else { rTarget.copy(pos); rDetected = true; }
+                }
             }
+            handL.update(lTarget, lDetected, isCharging, gestureCenter, progress);
+            handR.update(rTarget, rDetected, isCharging, gestureCenter, progress);
         }
 
-        handL.update(lTarget, lDetected, isCharging, gestureCenter, progress);
-        handR.update(rTarget, rDetected, isCharging, gestureCenter, progress);
-        
         morphSystem.update(time, dt);
-        updateUI(progress, lDetected, rDetected);
+        updateUI(progress);
         composer.render();
     }
 
-    function updateUI(progress, lDetected, rDetected) {
+    function updateUI(progress) {
         const hint = document.getElementById('ui-hint');
         const barBg = document.getElementById('progress-bar-bg');
         const bar = document.getElementById('progress-bar');
         
         if (currentState === STATE.ACTIVE) {
-            hint.style.opacity = 0; barBg.style.opacity = 0; return;
+            hint.style.opacity = 0; barBg.style.opacity = 0; 
+            document.getElementById('mobile-controls').style.opacity = 0; 
+            return;
         }
         hint.style.opacity = 1;
 
-        if (!lDetected && !rDetected) {
-            hint.innerText = "Wave Hands to Summon";
-            barBg.style.opacity = 0; chargeCounter = 0;
-        } else if ((lDetected && !rDetected) || (!lDetected && rDetected)) {
-            hint.innerText = "Need Two Hands";
-            barBg.style.opacity = 0; chargeCounter = 0;
+        if (isMobile) {
+            if (currentState === STATE.CHARGING) {
+                // 根据拉开程度提示
+                if (touchState.dragFactor < 0.3) {
+                    hint.innerText = "再往两边拉一点！";
+                    barBg.style.opacity = 0.5;
+                } else if (touchState.dragFactor < 0.8) {
+                    hint.innerText = "能量注入中...";
+                    barBg.style.opacity = 1;
+                } else {
+                    hint.innerText = "保持全功率输出！";
+                    barBg.style.opacity = 1;
+                }
+                bar.style.width = (Math.min(1, progress) * 100) + '%';
+            } else if (currentState === STATE.ALIGNING) {
+                hint.innerText = "同时按住两个按钮";
+                barBg.style.opacity = 1; bar.style.width = '0%';
+            } else {
+                // 【修改】：这里原来的提示语改成下面的 
+                hint.innerText = "按住按钮 顺着手机长边拉开";
+                barBg.style.opacity = 0;
+            }
         } else {
             if (currentState === STATE.CHARGING) {
                 hint.innerText = "Hold & Charge...";
@@ -865,23 +1086,20 @@
             } else if (currentState === STATE.ALIGNING) {
                 hint.innerText = "Connect Fingertips";
                 barBg.style.opacity = 1; bar.style.width = '0%';
-            } else {
-                hint.innerText = "Form Heart Shape";
+            } else if (currentState === STATE.SEARCHING) {
+                hint.innerText = "Wave Hands / Form Heart";
                 barBg.style.opacity = 0;
             }
         }
     }
 
     function mapToWorld(x, y) {
-        // 手机上的坐标映射调整
-        const w = isMobile ? 50 : 75; 
-        const h = isMobile ? 80 : 55; 
-        const wx = (0.5 - x) * w; 
-        const wy = (0.5 - y) * h;
+        const w = 75; const h = 55; 
+        const wx = (0.5 - x) * w; const wy = (0.5 - y) * h;
         return new THREE.Vector3(wx, wy, 0);
     }
 
-    function onResults(results) {
+    function onHandResults(results) {
         handsData = results.multiHandLandmarks;
         if (currentState === STATE.ACTIVE) return;
 
