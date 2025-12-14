@@ -121,6 +121,32 @@
             transform: translateY(0);
         }
 
+        /* === [添加] 手机端强制横屏逻辑 === */ 
+        @media screen and (orientation: portrait) { 
+            body { 
+                /* 强制将页面旋转90度 */ 
+                transform: translate(-50%, -50%) rotate(90deg); 
+                transform-origin: center center; 
+                
+                /* 重新调整宽高，让高变成宽，宽变成高 */ 
+                width: 100vh; 
+                height: 100vw; 
+                
+                /* 绝对定位居中 */ 
+                position: absolute; 
+                top: 50%; 
+                left: 50%; 
+                
+                overflow: hidden; 
+            } 
+
+            /* 确保画布填满旋转后的区域 */ 
+            #canvas-container { 
+                width: 100vh; 
+                height: 100vw; 
+            } 
+        }
+
     </style>
     
     <script type="importmap">
@@ -592,9 +618,21 @@
             components.runeRing.visible = runeOpacity > 0.01;
             components.runeRing.rotation.z -= speedFactor * 0.5; 
 
-            // [修改] 整体缩放 80%
-            const globalScale = (1.0 + pulseScale + (effectiveDist * 0.1)) * 0.8;
-            spellRoot.scale.setScalar(globalScale);
+            // [修改] 手机端缩放逻辑 =========================================== 
+            
+            // 1. 判断是不是手机 (通过检测 UserAgent 或者屏幕宽度) 
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900; 
+
+            // 2. 设置基础大小 
+            // 电脑端保持原来的 0.8 
+            // 手机端在 0.8 的基础上再乘以 0.6 (即 60% 大小)，防止横屏时图案太大溢出屏幕 
+            const baseSize = isMobile ? (0.8 * 0.6) : 0.8; 
+
+            // 3. 应用缩放 
+            const globalScale = (1.0 + pulseScale + (effectiveDist * 0.1)) * baseSize; 
+            spellRoot.scale.setScalar(globalScale); 
+            
+            // [修改] 结束 ===================================================
         }
 
         function animate() {
