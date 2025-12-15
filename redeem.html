@@ -56,6 +56,40 @@
             background: rgba(212, 175, 55, 0.1);
         }
 
+        /* ================= 教程弹窗样式 ================= */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); z-index: 999;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: 0.3s;
+        }
+        .modal-overlay:not(.hidden) { opacity: 1; pointer-events: all; }
+        
+        .modal-box {
+            width: 90%; max-width: 400px;
+            background: #111; border: 1px solid var(--gold-primary);
+            border-radius: 8px; padding: 20px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            transform: translateY(20px); transition: 0.3s;
+        }
+        .modal-overlay:not(.hidden) .modal-box { transform: translateY(0); }
+
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px;
+            color: var(--gold-primary); font-family: var(--font-title); font-size: 1.2rem;
+        }
+        .close-btn { cursor: pointer; font-size: 1.5rem; line-height: 1; color: #666; }
+        .close-btn:hover { color: #fff; }
+
+        .step-item { display: flex; gap: 15px; margin-bottom: 20px; align-items: flex-start; }
+        .step-num {
+            font-family: var(--font-title); font-size: 1.5rem; color: #333;
+            font-weight: bold; min-width: 40px; text-align: center;
+        }
+        .step-desc { font-size: 0.8rem; line-height: 1.5; color: #ccc; }
+        .step-desc strong { color: var(--gold-primary); display: block; margin-bottom: 3px; }
+
         /* ================= 新布局容器 ================= */
         .studio-container {
             display: flex;
@@ -230,6 +264,8 @@
     <div class="ambient-bg"></div>
 
     <div class="lang-switch-container">
+        <div class="lang-btn" onclick="toggleHelp()" style="margin-right:10px; font-weight:bold;">?</div>
+        
         <div class="lang-btn active" onclick="setUILang('zh')" id="lang-btn-zh">CN</div>
         <div class="lang-btn" onclick="setUILang('en')" id="lang-btn-en">EN</div>
     </div>
@@ -316,7 +352,7 @@
                     <div class="link-box" id="finalLink">Processing...</div>
                     
                     <div style="text-align:center; font-size:0.6rem; color:#888; margin-bottom:15px; line-height:1.4;">
-                        <span style="color:var(--error-red);" data-i18n="tip_save_safely">⚠️ 请务必保存好您的图片与链接，这是访问您的礼物的唯一途径。失去则无法找回。</span>
+                        <span style="color:var(--error-red);" data-i18n="tip_save_safely">⚠️ 请务必保存好您的图片与链接，这是找回礼物的唯一凭证。</span>
                     </div>
                     
                     <button class="save-btn" onclick="downloadImage()" data-i18n="btn_download">⬇ 保存卡片图片 / SAVE CARD IMAGE</button>
@@ -444,6 +480,14 @@
                 // 新增
                 tip_save_safely: "⚠️ 请务必保存好您的图片与链接，这是找回礼物的唯一凭证。",
                 alert_copy_done: "✅ 链接已复制到剪贴板！\n\n即将为您自动下载贺卡图片，请查收。",
+                // 新增教程翻译
+                help_title: "使用教程",
+                help_step1_title: "验证身份",
+                help_step1_desc: "输入您在闲鱼上购买的专属兑换码进入系统。",
+                help_step2_title: "定制礼物",
+                help_step2_desc: "选择特效风格，填写贺卡短语（显示在图上）和隐形祝福（扫码可见）。",
+                help_step3_title: "保存分享",
+                help_step3_desc: "生成后请务必下载保存图片。这是找回礼物的唯一凭证。",
                 // 卡片内部文字 (ZH)
                 card_to: "致",
                 card_from: "自",
@@ -486,6 +530,14 @@
                 // 新增
                 tip_save_safely: "⚠️ Please save your image and link safely. They are the only keys to access your gift.",
                 alert_copy_done: "✅ Link copied to clipboard!\n\nDownloading card image automatically...",
+                // 新增教程翻译
+                 help_title: "TUTORIAL",
+                 help_step1_title: "VERIFY CODE",
+                 help_step1_desc: "Enter your redeem code to access the terminal.",
+                 help_step2_title: "CUSTOMIZE",
+                 help_step2_desc: "Select visual style. Enter 'Card Text' (Visible) and 'Secret Message' (Inside QR).",
+                 help_step3_title: "SAVE & SHARE",
+                 help_step3_desc: "Download the image after generation. Keep it safe as your only proof of ownership.",
                 // Card Internal Text (EN)
                 card_to: "TO",
                 card_from: "FROM",
@@ -544,6 +596,16 @@
             document.querySelectorAll('.input-label.optional').forEach(el => {
                 el.setAttribute('data-opt', optText);
             });
+        }
+
+        // --- 帮助弹窗逻辑 ---
+        function toggleHelp() {
+            const modal = document.getElementById('helpModal');
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
         }
 
         function setCardLang(lang) {
@@ -938,5 +1000,35 @@
              }
         });
     </script>
+    
+    <div id="helpModal" class="modal-overlay hidden" onclick="toggleHelp()">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <span data-i18n="help_title">使用教程</span>
+                <span class="close-btn" onclick="toggleHelp()">×</span>
+            </div>
+            <div class="step-item">
+                <div class="step-num">01</div>
+                <div class="step-desc">
+                    <strong data-i18n="help_step1_title">验证身份</strong>
+                    <span data-i18n="help_step1_desc">输入您的专属兑换码进入系统。</span>
+                </div>
+            </div>
+            <div class="step-item">
+                <div class="step-num">02</div>
+                <div class="step-desc">
+                    <strong data-i18n="help_step2_title">定制礼物</strong>
+                    <span data-i18n="help_step2_desc">选择特效风格，填写贺卡短语（显示在图上）和隐形祝福（扫码可见）。</span>
+                </div>
+            </div>
+            <div class="step-item">
+                <div class="step-num">03</div>
+                <div class="step-desc">
+                    <strong data-i18n="help_step3_title">保存分享</strong>
+                    <span data-i18n="help_step3_desc">生成后请务必下载保存图片。这是找回礼物的唯一凭证。</span>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
