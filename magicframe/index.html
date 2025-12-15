@@ -121,31 +121,7 @@
             transform: translateY(0);
         }
 
-        /* === [添加] 手机端强制横屏逻辑 === */ 
-        @media screen and (orientation: portrait) { 
-            body { 
-                /* 强制将页面旋转90度 */ 
-                transform: translate(-50%, -50%) rotate(90deg); 
-                transform-origin: center center; 
-                
-                /* 重新调整宽高，让高变成宽，宽变成高 */ 
-                width: 100vh; 
-                height: 100vw; 
-                
-                /* 绝对定位居中 */ 
-                position: absolute; 
-                top: 50%; 
-                left: 50%; 
-                
-                overflow: hidden; 
-            } 
 
-            /* 确保画布填满旋转后的区域 */ 
-            #canvas-container { 
-                width: 100vh; 
-                height: 100vw; 
-            } 
-        }
 
     </style>
     
@@ -220,9 +196,29 @@
         let isEnergyLocked = false;
         let currentStage = 0;
         let pulseScale = 0;
+        let pressAcce = 0; // [新增] 用来记录长按时的加速度
 
         // [添加] 这是一个新变量，用来标记是否正在长按屏幕 
         let isLongPressing = false;
+
+        // [新增] 定义一个全局变量来判断是否为移动端 
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900; 
+
+        function updateStartText() { 
+            const overlayBtn = document.getElementById('overlay'); 
+            if (isPaidUser && overlayBtn.innerText.includes("时光法阵")) { 
+                // 如果是定制用户的文案，保留原样，不做修改 
+                return; 
+            } 
+            
+            // 如果是普通用户，根据设备修改提示 
+            if (isMobileDevice) { 
+                overlayBtn.innerText = "长按屏幕 · 开启法阵"; 
+                overlayBtn.style.letterSpacing = '4px'; 
+            } else { 
+                overlayBtn.innerText = "把手放到摄像头前 · 开启法阵"; 
+            } 
+        }
 
         // === 2. API 逻辑 ===
         window.goBuy = function() {
@@ -328,6 +324,7 @@
         
         fetchDecryptedPayload();
         initUI();
+        updateStartText();
 
         // === 3. 纹理生成 ===
 
@@ -608,77 +605,96 @@
             }
         }
 
-        function updateVisuals() {
-            // [修改] 确定当前的距离值。如果是长按，就强制设为 0.35，让特效转起来 
-            const currentProx = isLongPressing ? 0.35 : handProximity; 
-
-            // [修改] 使用新的 currentProx 来计算特效速度 
-            let effectiveDist = Math.max(0, currentProx - CONFIG.distThreshold); 
+        function updateVisuals() { 
+            // === 1. 计算长按加速/减速逻辑 (新增功能) === 
+            if (isLongPressing) { 
+                pressAcce += 0.004; // 按住时：速度逐渐增加 (0.004是加速度，数值越大起步越快) 
+            } else { 
+                pressAcce -= 0.003; // 松开后：速度慢慢衰减 (0.003是阻力，数值越小滑行越久) 
+            } 
+            // 限制 pressAcce 在 0 到 1 之间，防止速度无限增加或变成负数 
+            pressAcce = Math.max(0, Math.min(1, pressAcce)); 
+ 
+            // === 2. 确定当前的交互强度 === 
+            // 手机/长按：由 pressAcce 决定，模拟一个最大 0.6 的距离 (0.6会让它转得很快) 
+            const simulatedProx = pressAcce * 0.6; 
             
-            // 假设贴脸时 effectiveDist 约为 0.4 
-            // 0.4^4 = 0.0256 (很小) 
-            // 所以我们需要稍微乘个系数再平方/立方 
+            // 电脑/手势：如果是电脑，同时检测手势距离和鼠标按压，取最大值 
+            // 为了防止报错，先检查 isMobileDevice 是否定义，没定义就默认视为手机模式的逻辑 
+            const isMobile = (typeof isMobileDevice !== 'undefined') ? isMobileDevice : (window.innerWidth < 900); 
             
-            // 修正算法： 
-            // 当 effectiveDist 接近 0.3 (比较近) 时，加速才明显 
+            const activeDist = (!isMobile) 
+                               ? Math.max(handProximity, simulatedProx) 
+                               : simulatedProx; 
+ 
+            // 计算有效距离 (减去触发阈值) 
+            let effectiveDist = Math.max(0, activeDist - CONFIG.distThreshold); 
+            
+            // 速度公式：距离越近(或长按越久)，速度呈指数级上升 
             let speedBoost = Math.pow(effectiveDist * 2.5, 4); 
             
-            const speedFactor = CONFIG.minSpeed + (speedBoost * energy * 0.1);
-
-            // Particles
+            // 最终速度因子 
+            const speedFactor = CONFIG.minSpeed + (speedBoost * energy * 0.1); 
+ 
+            // === 3. 应用旋转和特效 (保持原有逻辑) === 
+            // 粒子系统 
             const particleScale = 1.0 + (energy * 5.5); 
-            components.sparkContainer.scale.setScalar(particleScale);
-            components.sparkContainer.rotation.z -= speedFactor * 3.0;
+            components.sparkContainer.scale.setScalar(particleScale); 
+            components.sparkContainer.rotation.z -= speedFactor * 3.0; 
+            // 加上一点随机摆动，增加灵动感 
             components.sparkContainer.rotation.x = Math.sin(Date.now() * 0.001) * 0.2; 
-            components.sparkContainer.rotation.y = Math.cos(Date.now() * 0.0013) * 0.2;
+            components.sparkContainer.rotation.y = Math.cos(Date.now() * 0.0013) * 0.2; 
             
             const easeAlpha = Math.pow(energy, 3); 
             components.sparks.material.opacity = Math.min(1, easeAlpha * 4); 
-
-            // Inner Shapes
-            components.innerShapes.forEach(shape => {
-                const threshold = shape.userData.activationThreshold;
+ 
+            // 内部几何图形 
+            components.innerShapes.forEach(shape => { 
+                const threshold = shape.userData.activationThreshold; 
                 const localEnergy = Math.max(0, energy - threshold) * 5.0; 
-                const opacity = Math.min(1, localEnergy);
+                const opacity = Math.min(1, localEnergy); 
                 shape.material.opacity = opacity * 1.0; 
-                shape.visible = opacity > 0.01;
+                shape.visible = opacity > 0.01; 
                 shape.rotation.z += speedFactor * (shape.userData.speed / 0.01); 
-            });
-
-            // Rings
-            components.rings.forEach(ring => {
-                const threshold = ring.userData.activationThreshold;
-                const localEnergy = Math.max(0, energy - threshold) * 4.0;
-                const opacity = Math.min(1, localEnergy);
-                ring.material.opacity = opacity * 1.0;
-                ring.visible = opacity > 0.01;
-                ring.rotation.z += speedFactor * (ring.userData.speed / 0.01);
-            });
-
-            // Text Ring
-            const runeThreshold = components.runeRing.userData.activationThreshold;
-            const runeEnergy = Math.max(0, energy - runeThreshold) * 3.0;
-            const runeOpacity = Math.min(1, runeEnergy);
-            components.runeRing.material.opacity = runeOpacity;
-            components.runeRing.visible = runeOpacity > 0.01;
+            }); 
+ 
+            // 法阵圆环 
+            components.rings.forEach(ring => { 
+                const threshold = ring.userData.activationThreshold; 
+                const localEnergy = Math.max(0, energy - threshold) * 4.0; 
+                const opacity = Math.min(1, localEnergy); 
+                ring.material.opacity = opacity * 1.0; 
+                ring.visible = opacity > 0.01; 
+                ring.rotation.z += speedFactor * (ring.userData.speed / 0.01); 
+            }); 
+ 
+            // 文字环 
+            const runeThreshold = components.runeRing.userData.activationThreshold; 
+            const runeEnergy = Math.max(0, energy - runeThreshold) * 3.0; 
+            const runeOpacity = Math.min(1, runeEnergy); 
+            components.runeRing.material.opacity = runeOpacity; 
+            components.runeRing.visible = runeOpacity > 0.01; 
             components.runeRing.rotation.z -= speedFactor * 0.5; 
-
-            // [修改] 手机端缩放逻辑 =========================================== 
-            
-            // 1. 判断是不是手机 (通过检测 UserAgent 或者屏幕宽度) 
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900; 
-
-            // 2. 设置基础大小 
-            // 电脑端保持原来的 0.8 
-            // 手机端在 0.8 的基础上再乘以 0.6 (即 60% 大小)，防止横屏时图案太大溢出屏幕 
-            const baseSize = isMobile ? (0.8 * 0.6) : 0.8; 
-
-            // 3. 应用缩放 
+ 
+            // === 4. 屏幕适配缩放 (上一轮做的手机适配) === 
+            let baseSize = 0.8; 
+ 
+            if (isMobile) { 
+                const aspect = window.innerWidth / window.innerHeight; 
+                if (aspect < 1) { 
+                    // 竖屏：根据宽度动态缩放，0.55 是为了让圆环两边留出一点空隙 
+                    baseSize = aspect * 0.55; 
+                } else { 
+                    // 横屏 
+                    baseSize = 0.5; 
+                } 
+            } 
+ 
+            // 整合所有缩放因素：基础大小 + 能量脉冲 + 距离拉近效果 
             const globalScale = (1.0 + pulseScale + (effectiveDist * 0.1)) * baseSize; 
             spellRoot.scale.setScalar(globalScale); 
-            
-            // [修改] 结束 ===================================================
         }
+        
 
         function animate() {
             requestAnimationFrame(animate);
@@ -714,31 +730,46 @@
         // === 6. 启动 ===
         window.startExperience = function() {
             const startDiv = document.getElementById('start-container');
-            startDiv.style.opacity = '0';
-            setTimeout(() => startDiv.style.display = 'none', 800);
-
-            document.getElementById('ui-layer').style.opacity = '1';
-            hasStarted = true;
-            setupMediaPipe();
-            if(!scene) initThree();
-
-            // [添加] 这里开始是新增的长按监听代码 =========== 
-            // 监听手机触摸开始 
-            document.addEventListener('touchstart', (e) => { 
-                // 这里的 preventDefault 可以防止长按时弹出浏览器菜单，但不影响点击广告 
-                if(e.target.tagName !== 'A' && e.target.parentElement.tagName !== 'A') { 
-                     // e.preventDefault(); // 如果发现按钮点不动，就把这一行删掉 
-                } 
-                isLongPressing = true; 
-            }, {passive: false}); 
             
-            // 监听手机触摸结束 
-            document.addEventListener('touchend', () => { isLongPressing = false; }); 
+            // 隐藏 UI 
+            startDiv.style.opacity = '0'; 
+            setTimeout(() => startDiv.style.display = 'none', 800); 
+            document.getElementById('ui-layer').style.opacity = '1'; 
             
-            // 同时也加上电脑鼠标的，方便你在电脑上测试 
-            document.addEventListener('mousedown', () => { isLongPressing = true; }); 
-            document.addEventListener('mouseup', () => { isLongPressing = false; }); 
-            // [添加] 结束 =============================== 
+            hasStarted = true; 
+            
+            // [核心修改] 根据设备决定启动方式 
+            if (isMobileDevice) { 
+                // 1. 如果是手机，直接初始化 3D 场景，不开启摄像头 
+                if(!scene) initThree(); 
+                console.log("Mobile mode: Camera skipped. Use Long Press."); 
+            } else { 
+                // 2. 如果是电脑，才开启摄像头检测 
+                setupMediaPipe(); 
+                if(!scene) initThree(); 
+            } 
+
+            // [通用] 添加交互监听 (手机长按 / 电脑鼠标长按) 
+            const addPressListeners = () => { 
+                const onDown = (e) => { 
+                    // 防止误触链接 
+                    if(e.target.tagName !== 'A' && e.target.parentElement.tagName !== 'A') { 
+                         // e.preventDefault(); 
+                    } 
+                    isLongPressing = true; 
+                }; 
+                const onUp = () => { isLongPressing = false; }; 
+
+                // 手机触摸 
+                document.addEventListener('touchstart', onDown, {passive: false}); 
+                document.addEventListener('touchend', onUp); 
+                
+                // 电脑鼠标 (作为备用) 
+                document.addEventListener('mousedown', onDown); 
+                document.addEventListener('mouseup', onUp); 
+            }; 
+
+            addPressListeners(); 
         };
 
         function setupMediaPipe() {
