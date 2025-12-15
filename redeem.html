@@ -237,7 +237,24 @@
         .c-from { font-family: var(--font-tech); font-size: 0.7rem; color: #ccc; align-self: flex-end; letter-spacing: 1px; }
 
         .c-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px; padding: 0 2px; }
-        .c-qr { background: #000; border: 1px solid var(--gold-primary); padding: 3px; width: 60px; height: 60px; display:flex; justify-content:center; align-items:center; }
+        .c-qr { 
+            background: #000; 
+            border: 1px solid var(--gold-primary); 
+            padding: 3px; 
+            /* 修改部分：移除固定宽高，改为自适应，且最大不超过25% */ 
+            width: fit-content; 
+            height: fit-content; 
+            max-width: 25%; 
+            aspect-ratio: 1/1; 
+            display:flex; 
+            justify-content:center; 
+            align-items:center; 
+        } 
+        /* 新增：强制二维码图片/Canvas 适应容器大小 */ 
+        .c-qr img, .c-qr canvas { 
+            max-width: 100% !important; 
+            height: auto !important; 
+        } 
         .c-qr-placeholder { color: #333; font-size: 0.5rem; text-align: center; } 
         .c-meta { text-align: right; font-size: 0.45rem; color: #666; font-family: var(--font-tech); line-height: 1.4; letter-spacing: 0.5px; }
         .c-meta span.highlight { color: var(--gold-primary); }
@@ -330,7 +347,7 @@
 
                     <div class="input-group">
                         <span class="input-label" data-i18n="label_qr_msg">隐藏祝福 (二维码内) / SECRET MESSAGE</span>
-                        <textarea id="inputWish" class="access-input" placeholder="Write your long secret message here..." maxlength="200" data-i18n-placeholder="placeholder_wish"></textarea>
+                        <textarea id="inputWish" class="access-input" placeholder="Write your long secret message here..." maxlength="60" data-i18n-placeholder="placeholder_wish"></textarea>
                         <div class="input-helper">
                             <span data-i18n="helper_qr_msg_1">* 此信息隐藏在二维码中。</span><br>
                             <span data-i18n="helper_qr_msg_2">* 对方扫码后才能看到。</span>
@@ -421,7 +438,7 @@
                 </div>
 
                 <div class="c-footer" style="display:flex; justify-content:space-between; align-items:flex-end;">
-                    <div class="c-qr" id="hd-qrcode" style="width:86px; height:86px; padding:8px; background:#000; border:1px solid #D4AF37; display:flex; justify-content:center; align-items:center;"></div>
+                    <div class="c-qr" id="hd-qrcode" style="max-width: 25%; width: fit-content; height: fit-content; padding:8px; background:#000; border:1px solid #D4AF37; display:flex; justify-content:center; align-items:center;"></div>
                     <div class="c-meta" style="font-size:0.55rem; text-align:right; line-height:1.4;">
                         <span id="hd-cardId">ID: ....</span><br>
                         <span class="highlight">VERIFIED</span><br>
@@ -803,7 +820,8 @@
                 correctLevel: QRCode.CorrectLevel.H
             };
             document.getElementById('qrcode').innerHTML = "";
-            new QRCode(document.getElementById('qrcode'), { ...qrOpts, width: 50, height: 50 });
+            // 修改部分：生成一个足够清晰的尺寸(如80)，具体的显示大小由CSS的 max-width 控制 
+            new QRCode(document.getElementById('qrcode'), { ...qrOpts, width: 80, height: 80 });
         }
 
         function renderHDCard(to, from, text, url) { 
@@ -841,8 +859,8 @@
             }; 
             document.getElementById('hd-qrcode').innerHTML = ""; 
             
-            // 修改：宽度设为 70 (配合容器的 86px - 16px padding)，保证四周有 8px 的纯黑静区 
-            new QRCode(document.getElementById('hd-qrcode'), { ...qrOpts, width: 70, height: 70 }); 
+            // 修改部分：生成稍大的尺寸(如100)保证清晰度，HTML中的 style="max-width:25%" 会自动限制它不超过界限 
+            new QRCode(document.getElementById('hd-qrcode'), { ...qrOpts, width: 100, height: 100 }); 
         }
 
         function drawPolygon(ctx, x, y, radius, sides, rotation) {
