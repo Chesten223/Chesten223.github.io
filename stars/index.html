@@ -238,13 +238,20 @@
         btn.style.setProperty('--y', y + 'px');
     }
 
-    // === 【核心修改】通过 API 获取解密数据 ===
+    // === 【核心修改】通过 API 获取解密数据 (带加载锁) ===
     async function fetchDecryptedPayload() {
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
         const overlayBtn = document.getElementById('overlay');
         
+        // 只有当链接里有 code 参数时，才进行锁定和请求 
         if (code) {
+            // --- 1. 开启加载状态 (锁住按钮) --- 
+            overlayBtn.innerText = "信号接收中..."; // 提示用户正在加载 
+            overlayBtn.style.pointerEvents = "none"; // 禁止点击，防止误触 
+            overlayBtn.style.cursor = "wait";        // 鼠标变漏斗/等待状 
+            overlayBtn.style.opacity = "0.7";        // 稍微变暗示意不可用 
+
             try {
                 // 向后端发起请求，让后端解密
                 const response = await fetch(API_DECODE_URL, {
@@ -263,42 +270,38 @@
                     if (payload.wish) { 
                         isPaidUser = true; // 标记为付费用户 
                         
-                        // === 1. 智能更新进入按钮文字 ===
-                        const toUser = payload.to ? payload.to.trim() : "";
-                        const fromUser = payload.from ? payload.from.trim() : "";
+                        // === 2. 智能更新进入按钮文字 === 
+                        const toUser = payload.to ? payload.to.trim() : ""; 
+                        const fromUser = payload.from ? payload.from.trim() : ""; 
 
                         if (toUser && fromUser) {
-                            overlayBtn.innerText = `这是 ${fromUser} 送给 ${toUser} 的星空`;
-                            // 名字太长时缩小字间距和字号
-                            overlayBtn.style.letterSpacing = '1px';
-                            overlayBtn.style.fontSize = '14px';
+                            overlayBtn.innerText = `这是 ${fromUser} 送给 ${toUser} 的星空`; 
+                            overlayBtn.style.letterSpacing = '1px'; 
+                            overlayBtn.style.fontSize = '14px'; 
                             overlayBtn.style.padding = '20px 30px'; 
                         } else if (toUser) {
-                            overlayBtn.innerText = `${toUser}，这是一片属于你的星空`;
-                            overlayBtn.style.letterSpacing = '1px';
-                            overlayBtn.style.fontSize = '14px';
-                            overlayBtn.style.padding = '20px 30px';
+                            overlayBtn.innerText = `${toUser}，这是一片属于你的星空`; 
+                            overlayBtn.style.letterSpacing = '1px'; 
+                            overlayBtn.style.fontSize = '14px'; 
+                            overlayBtn.style.padding = '20px 30px'; 
                         } else if (fromUser) {
-                            overlayBtn.innerText = `来自 ${fromUser} 的星空祝福`;
-                            overlayBtn.style.letterSpacing = '3px';
-                            overlayBtn.style.fontSize = '15px';
+                            overlayBtn.innerText = `来自 ${fromUser} 的星空祝福`; 
+                            overlayBtn.style.letterSpacing = '3px'; 
+                            overlayBtn.style.fontSize = '15px'; 
                         } else {
-                            overlayBtn.innerText = "见证星空祝福";
-                            overlayBtn.style.letterSpacing = '6px';
-                        }
+                            overlayBtn.innerText = "见证星空祝福"; 
+                            overlayBtn.style.letterSpacing = '6px'; 
+                        } 
 
-                        // === 2. 构建基础播放列表 (倒计时) ===
+                        // === 3. 构建基础播放列表 === 
                         let newTextList = ["3", "2", "1"]; 
-                        
-                        // === 3. 处理多行祝福语 ===
                         if(payload.wish) { 
                             const lines = payload.wish.split('\n').filter(line => line.trim() !== ''); 
                             newTextList.push(...lines); 
                         } 
-                        
                         config.textList = newTextList; 
                         
-                        // === 4. 重新计算每句话的播放时长 ===
+                        // === 4. 重新计算时长 === 
                         config.textDuration = newTextList.map(text => { 
                             if (/^\d+$/.test(text) && text.length < 3) return 1500; 
                             return 3500; 
@@ -307,10 +310,19 @@
                         // 刷新 UI 状态 
                         initUI(); 
                     }
-                }
+                } else {
+                    // 如果后端返回 success: false，但网络通了，恢复默认文本 
+                    overlayBtn.innerText = "开启 2026"; 
+                } 
             } catch (e) {
                 console.error("API Error:", e);
-                // 出错时保持默认文本
+                // 网络错误，恢复默认文本，保证用户至少能玩免费版 
+                overlayBtn.innerText = "开启 2026"; 
+            } finally {
+                // --- 5. 无论成功失败，最后都要解锁按钮 --- 
+                overlayBtn.style.pointerEvents = "auto"; // 恢复可点击 
+                overlayBtn.style.cursor = "pointer";     // 恢复手型鼠标 
+                overlayBtn.style.opacity = "1";          // 恢复亮度 
             }
         }
     }

@@ -234,13 +234,20 @@
         btn.style.setProperty('--y', y + 'px');
     }
 
-    // === 1. 获取解密数据 ===
+    // === 1. 获取解密数据 (带加载锁) === 
     async function fetchDecryptedPayload() { 
         const params = new URLSearchParams(window.location.search); 
         const code = params.get('code'); 
         const overlayBtn = document.getElementById('overlay'); 
          
+        // 只有当链接带有 code 时才触发锁定 
         if (code) { 
+            // --- 锁定按钮：防止数据未加载完就点击 --- 
+            overlayBtn.innerText = "烟花装填中..."; 
+            overlayBtn.style.pointerEvents = "none"; // 禁止点击 
+            overlayBtn.style.cursor = "wait";        // 鼠标变漏斗 
+            overlayBtn.style.opacity = "0.8";        // 变暗 
+            
             try { 
                 const response = await fetch(API_DECODE_URL, { 
                     method: 'POST', 
@@ -259,8 +266,8 @@
                         // 1. 获取称呼 
                         const toUser = payload.to ? payload.to.trim() : ""; 
                         const fromUser = payload.from ? payload.from.trim() : ""; 
-  
-                        // 2. 定制按钮文案 (仅修改界面显示，不影响烟花内容) 
+   
+                        // 2. 定制按钮文案 (数据加载成功后更新) 
                         if (toUser && fromUser) { 
                             overlayBtn.innerText = `看，这是 ${fromUser} 为 ${toUser} 燃放的烟花`; 
                             overlayBtn.style.letterSpacing = '1px'; 
@@ -278,24 +285,34 @@
                             overlayBtn.innerText = "点燃 2026 绚烂烟火"; 
                             overlayBtn.style.letterSpacing = '4px'; 
                         } 
-  
-                        // 3. 构建烟花文字播放序列 (只放祝福语，不放名字) 
+   
+                        // 3. 构建烟花文字播放序列 
                         let newTextList = []; 
-  
                         if (payload.wish) { 
                             const lines = payload.wish.split('\n').filter(line => line.trim() !== ''); 
                             newTextList.push(...lines); 
                         } 
-  
                         // 保底逻辑 
                         if (newTextList.length === 0) newTextList.push("2026 新年快乐"); 
-  
+   
                         config.textList = newTextList; 
-                         
-                        initUI(); 
                     } 
+                } else { 
+                    // 后端返回成功但无数据，恢复默认 
+                    overlayBtn.innerText = "开启 2026 🎆"; 
                 } 
-            } catch (e) { console.error("API Error:", e); } 
+            } catch (e) { 
+                console.error("API Error:", e); 
+                // 网络错误，恢复默认文案，保证能玩 
+                overlayBtn.innerText = "开启 2026 🎆"; 
+            } finally { 
+                // --- 解锁按钮：无论成功还是失败，最后都必须恢复可点击状态 --- 
+                overlayBtn.style.pointerEvents = "auto"; 
+                overlayBtn.style.cursor = "pointer"; 
+                overlayBtn.style.opacity = "1"; 
+                
+                initUI(); // 刷新水印状态 
+            } 
         } 
     }
     fetchDecryptedPayload();

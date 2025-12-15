@@ -586,12 +586,20 @@
         }
     }
 
+    // === 【核心修改】获取解密数据 (带加载锁与防误触) === 
     async function fetchDecryptedPayload() { 
         const params = new URLSearchParams(window.location.search); 
         const code = params.get('code'); 
         const overlayBtn = document.getElementById('overlay'); 
          
+        // 只有当存在 code 时，才需要锁定等待 
         if (code) { 
+            // --- 1. 锁定按钮，显示加载中 --- 
+            overlayBtn.innerText = "信号接收中..."; 
+            overlayBtn.style.pointerEvents = "none"; // 禁止点击 
+            overlayBtn.style.cursor = "wait";        // 鼠标变漏斗 
+            overlayBtn.style.opacity = "0.8";        // 稍微变暗 
+            
             try { 
                 const response = await fetch(API_DECODE_URL, { 
                     method: 'POST', 
@@ -608,23 +616,20 @@
                     if (payload.wish || payload.to || payload.from) { 
                         isPaidUser = true; 
                          
-                        // 1. 处理祝福语 (将多行文本拆分为粒子变换的数组) 
+                        // 1. 处理祝福语 
                         if (payload.wish) { 
-                            // 按换行符拆分，过滤空行 
                             const lines = payload.wish.split('\n').filter(line => line.trim() !== ''); 
-                            // 覆盖默认的 ["I LOVE U", "FOREVER"] 
                             CONFIG.textPhrases = lines; 
                         } 
- 
+
                         // 2. 获取称呼 
                         const toUser = payload.to ? payload.to.trim() : ""; 
                         const fromUser = payload.from ? payload.from.trim() : ""; 
- 
-                        // 3. 根据情景定制按钮文案 (浪漫/赛博风) 
+
+                        // 3. --- 根据情景定制按钮文案 (成功获取后更新) --- 
                         if (toUser && fromUser) { 
-                            // 双人：强调"专属频段"或"发送" 
+                            // 双人：强调"专属频段" 
                             overlayBtn.innerText = `⚡ ${fromUser} 发送给 ${toUser} 的心动频段`; 
-                            // 名字太长时缩小字号 
                             overlayBtn.style.letterSpacing = '1px'; 
                             overlayBtn.style.fontSize = '14px'; 
                             overlayBtn.style.padding = '20px 25px'; 
@@ -639,21 +644,32 @@
                             overlayBtn.style.letterSpacing = '2px'; 
                             overlayBtn.style.fontSize = '15px'; 
                         } else { 
-                            // 默认：强调"交互动作" 
+                            // 有祝福语但没名字 
                             overlayBtn.innerText = "💖 双手比心，连接专属频道"; 
                             overlayBtn.style.letterSpacing = '4px'; 
                         } 
- 
-                        // 刷新 UI (隐藏水印等) 
-                        initUI(); 
                     } 
+                } else { 
+                    // 后端返回成功但没数据，恢复默认 
+                    overlayBtn.innerText = "✨ 开启 2026 魔法 ✨"; 
                 } 
             } catch (e) { 
                 console.error("API Error", e); 
+                // 网络错误，恢复默认，保证能玩 
+                overlayBtn.innerText = "✨ 开启 2026 魔法 ✨"; 
+            } finally { 
+                // --- 4. 无论成功失败，最后必须解锁按钮 --- 
+                overlayBtn.style.pointerEvents = "auto"; 
+                overlayBtn.style.cursor = "pointer"; 
+                overlayBtn.style.opacity = "1"; 
+                
+                // 刷新 UI (隐藏水印等) 
+                initUI(); 
             } 
+        } else { 
+            // 没有 code 的情况，直接初始化 
+            initUI(); 
         } 
-        // 无论成功失败，最后都执行一次 UI 初始化确保状态正确 
-        initUI(); 
     }
     
     // === 视频窗口折叠/展开功能 === 
