@@ -985,33 +985,59 @@
             const btn = document.querySelector('.save-btn'); 
             const originalText = btn.innerText; 
             
-            // 临时显示加载状态 
-            btn.innerText = "PROCESSING..."; 
+            // 提示正在生成 
+            btn.innerText = "RENDERING..."; 
             btn.disabled = true; 
-
+ 
+            // 等待字体加载和DOM渲染 
             await document.fonts.ready; 
-            await new Promise(r => setTimeout(r, 500)); // 等待字体渲染 
+            await new Promise(r => setTimeout(r, 500)); 
             
             try { 
-                // scale: 3 表示生成 3 倍分辨率的图片 (400px * 3 = 1200px 宽) 
-                // 这样既保证了排版协调，又保证了保存下来的图片足够大、足够清晰 
+                // 1. 生成高清 Canvas 
                 const canvas = await html2canvas(hdCard, { 
-                    scale: 3, 
+                    scale: 3, // 保持3倍高清 
                     backgroundColor: "#000", 
                     useCORS: true 
                 }); 
                 
-                const link = document.createElement('a'); 
-                link.download = `CyberCard_2026_${selectedType}.png`; 
-                link.href = canvas.toDataURL("image/png"); 
-                link.click(); 
+                // 2. 转为 Base64 图片数据 
+                const imgData = canvas.toDataURL("image/png"); 
+ 
+                // === 核心修改：区分 电脑端 vs 手机端 === 
+                // 判断是否为移动端 (简单粗暴但有效) 
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent); 
+ 
+                if (isMobile) { 
+                    // [手机端策略]：显示弹窗让用户长按保存 
+                    const imgEl = document.getElementById('generated-img'); 
+                    const modal = document.getElementById('imgModal'); 
+                    
+                    imgEl.src = imgData; 
+                    modal.classList.remove('hidden'); 
+                    
+                    // 稍微震动一下反馈（如果设备支持） 
+                    if(navigator.vibrate) navigator.vibrate(50); 
+                } else { 
+                    // [电脑端策略]：保持原来的直接下载，因为电脑方便 
+                    const link = document.createElement('a'); 
+                    link.download = `CyberCard_2026_${selectedType}.png`; 
+                    link.href = imgData; 
+                    link.click(); 
+                } 
+ 
             } catch (err) { 
                 console.error(err); 
-                alert("Download Error"); 
+                alert("Image Generation Failed"); 
             } finally { 
                 btn.innerText = originalText; 
                 btn.disabled = false; 
             } 
+        } 
+ 
+        // 新增：关闭弹窗的函数 
+        function closeImgModal() { 
+            document.getElementById('imgModal').classList.add('hidden'); 
         }
         
         window.addEventListener('resize', () => {
@@ -1049,6 +1075,22 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- 图片预览弹窗 -->
+    <div id="imgModal" class="modal-overlay hidden" style="z-index: 10000;"> 
+        <div class="modal-box" style="background:transparent; box-shadow:none; border:none; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;"> 
+            
+            <div style="background:rgba(0,0,0,0.8); padding:10px 20px; border-radius:20px; color:#fff; font-size:14px; margin-bottom:15px; border:1px solid var(--gold-primary); animation: fadeIn 0.5s;"> 
+                📱 长按下方图片保存到相册 
+            </div> 
+
+            <img id="generated-img" style="max-width:90%; max-height:75vh; border:1px solid #333; box-shadow:0 0 30px rgba(0,0,0,0.8); border-radius:8px;" src="" alt="Card Image"> 
+
+            <button onclick="closeImgModal()" style="margin-top:20px; background:rgba(255,255,255,0.2); border:1px solid #fff; color:#fff; padding:8px 20px; border-radius:30px; cursor:pointer;"> 
+                关闭 / CLOSE 
+            </button> 
+        </div> 
     </div>
 </body>
 </html>
