@@ -240,11 +240,11 @@
         .c-qr { 
             background: #000; 
             border: 1px solid var(--gold-primary); 
-            padding: 3px; 
-            /* 修改部分：移除固定宽高，改为自适应，且最大不超过25% */ 
+            padding: 4px; /*稍微加一点内边距让白边明显点*/ 
             width: fit-content; 
             height: fit-content; 
-            max-width: 25%; 
+            /* 修改部分：从 25% 改为 35%，允许它占据左下角更大的空间 */ 
+            max-width: 35%; 
             aspect-ratio: 1/1; 
             display:flex; 
             justify-content:center; 
@@ -438,7 +438,7 @@
                 </div>
 
                 <div class="c-footer" style="display:flex; justify-content:space-between; align-items:flex-end;">
-                    <div class="c-qr" id="hd-qrcode" style="max-width: 25%; width: fit-content; height: fit-content; padding:8px; background:#000; border:1px solid #D4AF37; display:flex; justify-content:center; align-items:center;"></div>
+                    <div class="c-qr" id="hd-qrcode" style="max-width: 35%; width: fit-content; height: fit-content; padding:8px; background:#000; border:1px solid #D4AF37; display:flex; justify-content:center; align-items:center;"></div>
                     <div class="c-meta" style="font-size:0.55rem; text-align:right; line-height:1.4;">
                         <span id="hd-cardId">ID: ....</span><br>
                         <span class="highlight">VERIFIED</span><br>
@@ -820,8 +820,8 @@
                 correctLevel: QRCode.CorrectLevel.H
             };
             document.getElementById('qrcode').innerHTML = "";
-            // 修改部分：生成一个足够清晰的尺寸(如80)，具体的显示大小由CSS的 max-width 控制 
-            new QRCode(document.getElementById('qrcode'), { ...qrOpts, width: 80, height: 80 });
+            // 修改部分：width 改为 128 (原来是80)，预览时就更清晰 
+            new QRCode(document.getElementById('qrcode'), { ...qrOpts, width: 128, height: 128 });
         }
 
         function renderHDCard(to, from, text, url) { 
@@ -859,8 +859,8 @@
             }; 
             document.getElementById('hd-qrcode').innerHTML = ""; 
             
-            // 修改部分：生成稍大的尺寸(如100)保证清晰度，HTML中的 style="max-width:25%" 会自动限制它不超过界限 
-            new QRCode(document.getElementById('hd-qrcode'), { ...qrOpts, width: 100, height: 100 }); 
+            // 修改部分：width 改为 256 (原来是100)，这是超高清分辨率，保证下载后绝对可扫 
+            new QRCode(document.getElementById('hd-qrcode'), { ...qrOpts, width: 256, height: 256 }); 
         }
 
         function drawPolygon(ctx, x, y, radius, sides, rotation) {
