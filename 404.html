@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYSTEM FAILURE | Cyber Gift</title>
+    <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #050505;
+            --text-color: #e0e0e0;
+            --gold: #D4AF37;
+            --error-red: #ff3333;
+            --glitch-offset: 2px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Space Mono', monospace;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* 背景噪点网格 */
+        .grid-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(rgba(212, 175, 55, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(212, 175, 55, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .container {
+            text-align: center;
+            padding: 20px;
+            z-index: 10;
+            border: 1px solid rgba(255, 51, 51, 0.3);
+            background: rgba(10, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            padding: 40px 60px;
+            box-shadow: 0 0 50px rgba(255, 0, 0, 0.1);
+            position: relative;
+        }
+
+        /* 装饰角标 */
+        .corner {
+            position: absolute; width: 10px; height: 10px;
+            border: 2px solid var(--error-red);
+        }
+        .tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+        .tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+        .bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+        .br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+        /* 巨大的故障文字 */
+        .glitch-text {
+            font-size: 6rem;
+            font-weight: 700;
+            color: var(--text-color);
+            position: relative;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px var(--error-red);
+        }
+
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color);
+        }
+
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -1px 0 var(--gold);
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
+        }
+
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: -1px 0 var(--error-red);
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim-1 {
+            0% { clip: rect(20px, 9999px, 10px, 0); }
+            20% { clip: rect(60px, 9999px, 80px, 0); }
+            40% { clip: rect(10px, 9999px, 50px, 0); }
+            60% { clip: rect(90px, 9999px, 10px, 0); }
+            80% { clip: rect(30px, 9999px, 70px, 0); }
+            100% { clip: rect(50px, 9999px, 20px, 0); }
+        }
+
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(10px, 9999px, 90px, 0); }
+            20% { clip: rect(80px, 9999px, 10px, 0); }
+            40% { clip: rect(40px, 9999px, 50px, 0); }
+            60% { clip: rect(20px, 9999px, 80px, 0); }
+            80% { clip: rect(60px, 9999px, 30px, 0); }
+            100% { clip: rect(70px, 9999px, 10px, 0); }
+        }
+
+        h2 {
+            color: var(--error-red);
+            font-size: 1.2rem;
+            letter-spacing: 0.2em;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .log-output {
+            text-align: left;
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 30px;
+            border-top: 1px dashed #333;
+            border-bottom: 1px dashed #333;
+            padding: 10px 0;
+            line-height: 1.8;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .log-line span { color: var(--gold); margin-right: 10px; }
+        .blink { animation: blink 1s infinite; }
+
+        .btn-home {
+            display: inline-block;
+            padding: 12px 30px;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            text-decoration: none;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: 0.3s;
+            background: rgba(212, 175, 55, 0.05);
+        }
+
+        .btn-home:hover {
+            background: var(--gold);
+            color: #000;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+        }
+
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* 移动端适配 */
+        @media (max-width: 600px) {
+            .glitch-text { font-size: 4rem; }
+            .container { width: 90%; padding: 30px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="grid-bg"></div>
+
+    <div class="container">
+        <div class="corner tl"></div><div class="corner tr"></div>
+        <div class="corner bl"></div><div class="corner br"></div>
+
+        <div class="glitch-text" data-text="404">404</div>
+        <h2>Signal Lost / 信号丢失</h2>
+
+        <div class="log-output">
+            <div class="log-line"><span>></span> SYSTEM_CHECK: INTEGRITY OK</div>
+            <div class="log-line"><span>></span> LOCATING_RESOURCE: ...FAILED</div>
+            <div class="log-line"><span>></span> ERROR_CODE: NULL_POINTER_EXCEPTION</div>
+            <div class="log-line"><span>></span> STATUS: DISCONNECTED <span class="blink">_</span></div>
+        </div>
+
+        <a href="/" class="btn-home">Return to Base / 返回基地</a>
+    </div>
+
+    <script>
+        // 简单的随机乱码效果，增加黑客感
+        const logLines = document.querySelector('.log-output');
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*';
+        
+        function randomStr(len) {
+            let s = '';
+            for(let i=0; i<len; i++) s += chars.charAt(Math.floor(Math.random() * chars.length));
+            return s;
+        }
+
+        // 模拟页面加载时的终端打印效果
+        setTimeout(() => {
+            const newLine = document.createElement('div');
+            newLine.className = 'log-line';
+            newLine.style.color = '#ff3333';
+            newLine.innerHTML = `<span>></span> TRACE_ROUTE: ${window.location.pathname} NOT FOUND`;
+            logLines.insertBefore(newLine, logLines.lastElementChild);
+        }, 500);
+
+    </script>
+</body>
+</html>
