@@ -4,30 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Access Terminal | 2026 Cyber Gift</title>
-    <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
-
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+SC:wght@300;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Serif+SC:wght@300;600&family=Space+Mono&display=swap" rel="stylesheet">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
-        /* =========================================
-           1. 核心视觉样式
-           ========================================= */
+        /* ================= 0. 全局样式 ================= */
         :root {
             --bg-dark: #050505;
-            --glass-bg: rgba(20, 20, 20, 0.6);
-            --glass-border: rgba(212, 175, 55, 0.2);
             --gold-primary: #D4AF37;
-            --gold-glow: rgba(212, 175, 55, 0.5);
-            --gold-gradient: linear-gradient(135deg, #F3E5AB 0%, #D4AF37 50%, #aa8a26 100%);
-            --font-main: 'Consolas', 'Monaco', monospace;
             --font-title: 'Cinzel', serif;
-            --font-serif: 'Noto Serif SC', serif;
-            --font-tech: 'Share Tech Mono', monospace;
+            --font-body: 'Noto Serif SC', serif;
+            --font-tech: 'Space Mono', monospace;
             --error-red: #ff4d4d;
         }
 
@@ -36,356 +28,376 @@
         body {
             background-color: var(--bg-dark);
             color: #e0e0e0;
-            font-family: var(--font-main);
+            font-family: var(--font-tech);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            padding: 20px;
             overflow-x: hidden;
-            position: relative;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* 背景动效 */
         .ambient-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
             background: radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.05), transparent 70%);
         }
-        .noise-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
-            z-index: -1; pointer-events: none;
+
+        /* 语言切换器 (右上角) */
+        .lang-switch-container {
+            position: absolute; top: 20px; right: 20px; z-index: 100;
+            display: flex; gap: 10px;
+        }
+        .lang-btn {
+            background: rgba(0,0,0,0.6); border: 1px solid #444; color: #888;
+            padding: 5px 10px; font-size: 0.7rem; font-family: var(--font-tech);
+            cursor: pointer; border-radius: 4px; transition: 0.3s;
+        }
+        .lang-btn.active {
+            border-color: var(--gold-primary); color: var(--gold-primary);
+            background: rgba(212, 175, 55, 0.1);
         }
 
-        /* 主卡片容器 */
+        /* ================= 新布局容器 ================= */
+        .studio-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 40px;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            flex: 1;
+            padding-top: 5vh;
+            transition: all 0.5s ease;
+        }
+
+        .console-column { flex: 0 1 450px; width: 100%; transition: all 0.5s ease; }
+
+        .preview-column {
+            flex: 0 1 400px; width: 100%;
+            display: none; flex-direction: column; align-items: center;
+            opacity: 0; transform: translateX(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .preview-column.active { display: flex; }
+        .preview-column.visible { opacity: 1; transform: translateX(0); }
+
+        @media (max-width: 900px) {
+            .studio-container { flex-direction: column; align-items: center; padding-top: 50px; gap: 20px; }
+            .preview-column { order: -1; max-width: 320px; display: none !important; }
+            .preview-column.active { display: flex !important; margin-bottom: 20px; }
+        }
+
+        /* ================= 控制台卡片 ================= */
         .console-card {
-            width: 90%; max-width: 500px;
-            background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border); border-radius: 12px;
-            padding: 40px 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-            text-align: center; position: relative;
-            opacity: 0; animation: cardEntry 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-            margin: 20px 0; z-index: 10;
-        }
-        @keyframes cardEntry { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-
-        .console-header {
-            color: var(--gold-primary); font-family: var(--font-title); font-size: 1.8rem; margin-bottom: 8px; font-weight: bold; letter-spacing: 2px;
-            text-shadow: 0 0 15px var(--gold-glow);
-        }
-        .console-sub {
-            font-size: 0.75rem; color: #888; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 3px;
-            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; display: inline-block; font-family: var(--font-tech);
+            background: rgba(20, 20, 20, 0.95);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+            position: relative; z-index: 10;
         }
 
-        /* 表单与输入框 */
-        .hidden { display: none !important; }
-        .fade-in { animation: fadeIn 0.5s forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .console-header { text-align: center; color: var(--gold-primary); font-family: var(--font-title); font-size: 1.5rem; letter-spacing: 2px; margin-bottom: 5px; }
+        .console-sub { text-align: center; font-size: 0.6rem; color: #666; letter-spacing: 2px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 25px; }
 
-        .input-group { position: relative; margin-bottom: 20px; text-align: left; }
-        .input-label { font-size: 0.7rem; color: var(--gold-primary); opacity: 0.8; margin-bottom: 8px; display: block; letter-spacing: 1px; font-family: var(--font-tech); }
+        .input-group { margin-bottom: 18px; position: relative; }
+        .input-label { display: block; font-size: 0.6rem; color: var(--gold-primary); margin-bottom: 5px; letter-spacing: 1px; font-weight: bold; }
+        .input-label.optional::after { content: attr(data-opt); color: #666; font-size: 0.5rem; font-weight: normal; margin-left: 5px; }
+        
+        .input-helper { font-size: 0.55rem; color: #888; margin-top: 4px; font-style: italic; line-height: 1.4; }
+        .input-helper span { color: #aaa; }
 
         .access-input {
-            width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 4px; padding: 12px; font-family: var(--font-main); font-size: 1.1rem;
-            color: #fff; text-align: center; letter-spacing: 2px; outline: none; transition: all 0.3s;
+            width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
+            color: #fff; padding: 12px; font-family: var(--font-tech); text-align: left; font-size: 0.9rem;
+            border-radius: 4px; outline: none; transition: 0.3s;
         }
-        .access-input:focus { border-color: var(--gold-primary); background: rgba(0,0,0,0.5); box-shadow: 0 0 10px rgba(212, 175, 55, 0.2); }
-        
-        textarea.access-input { 
-            height: 120px; resize: none; line-height: 1.6; padding: 15px; 
-            overflow-y: auto; display: block; white-space: pre-wrap; font-family: var(--font-serif);
-            text-align: left;
-        } 
-        textarea.access-input::placeholder { font-family: var(--font-main); }
+        .access-input:focus { border-color: var(--gold-primary); box-shadow: 0 0 10px rgba(212, 175, 55, 0.2); }
+        textarea.access-input { resize: none; height: 80px; font-family: var(--font-body); }
 
-        /* 礼物选择网格 */
-        .gift-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 25px; }
-        .gift-option {
-            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px; padding: 15px 5px; cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden;
-        }
-        .gift-option.selected {
-            border-color: var(--gold-primary); background: rgba(212, 175, 55, 0.1); box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
-        }
-        .gift-icon { font-size: 1.8rem; margin-bottom: 8px; display: block; }
-        .gift-name { font-size: 0.7rem; color: #aaa; letter-spacing: 1px; font-weight: bold; font-family: var(--font-tech); }
-        .gift-option.selected .gift-name { color: var(--gold-primary); }
-        .platform-tag { color: #888; font-size: 0.6rem; font-weight: normal; margin-left: 4px; }
-        .gift-option.selected .platform-tag { color: var(--gold-primary); opacity: 0.7; }
-
-        /* 按钮 */
         .verify-btn {
-            width: 100%; padding: 16px; background: var(--gold-gradient); border: none; border-radius: 4px;
-            color: #050505; font-family: var(--font-tech); font-weight: bold; font-size: 1rem;
-            letter-spacing: 2px; cursor: pointer; transition: all 0.3s; text-transform: uppercase;
+            width: 100%; padding: 14px; background: var(--gold-primary); border: none; border-radius: 4px;
+            color: #000; font-family: var(--font-tech); font-weight: bold; cursor: pointer; letter-spacing: 1px;
+            transition: 0.3s; margin-top: 10px; display: flex; justify-content: center; align-items: center;
         }
-        .verify-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(212, 175, 55, 0.4); }
-        .verify-btn:disabled { opacity: 0.6; cursor: not-allowed; filter: grayscale(0.8); }
-
-        /* =========================================
-           2. 结果展示区 (Card First Design)
-           ========================================= */
-        #result-area {
-            background: transparent; /* 去掉边框，让卡片突出 */
-            padding: 0; margin-top: 25px;
-            animation: fadeIn 0.8s forwards; position: relative;
-            display: flex; flex-direction: column; align-items: center; gap: 20px;
-        }
-
-        /* 生成的卡片展示 */
-        .generated-card-preview {
-            width: 100%;
-            max-width: 320px; /* 限制展示宽度 */
-            height: auto;
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border: 1px solid rgba(212, 175, 55, 0.3);
-            transition: transform 0.3s;
-            cursor: zoom-in;
-        }
-        .generated-card-preview:hover { transform: scale(1.02); }
-
-        /* 链接操作区 */
-        .link-actions {
-            width: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            border: 1px dashed var(--gold-primary);
-            border-radius: 8px;
-            padding: 15px;
-        }
-
-        .result-title {
-            color: #fff; margin-bottom: 12px; font-weight: bold; letter-spacing: 1px; font-size: 0.8rem;
-            font-family: var(--font-tech); text-align: left;
-        }
-        .url-box {
-            word-break: break-all; color: #888; font-size: 11px; margin-bottom: 15px; font-family: monospace;
-            background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);
-            user-select: all; text-align: left;
-        }
-
-        .btn-group { display: flex; gap: 10px; }
-        .copy-btn {
-            background: transparent; border: 1px solid var(--gold-primary); color: var(--gold-primary);
-            padding: 10px; flex: 1; border-radius: 4px; cursor: pointer;
-            font-family: var(--font-tech); font-weight: bold; letter-spacing: 1px;
-            transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .copy-btn:hover { background: rgba(212, 175, 55, 0.1); }
-        .copy-btn.success { background: var(--gold-primary); color: #000; }
+        .verify-btn:hover:not(:disabled) { background: #F9E79F; box-shadow: 0 0 20px rgba(212, 175, 55, 0.4); }
+        .verify-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         
-        .direct-btn {
-            text-decoration: none; border: 1px solid rgba(255,255,255,0.2); color: #fff;
-            padding: 10px; border-radius: 4px; display: flex; align-items: center; justify-content: center;
-            font-family: var(--font-tech); transition: all 0.2s;
+        .secondary-btn { background: transparent; border: 1px solid #555; color: #aaa; margin-top: 10px; }
+        .secondary-btn:hover { border-color: #888; color: #fff; background: rgba(255,255,255,0.05); }
+
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.6s forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 风格选择 & 卡片语言切换 */
+        .gift-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .gift-option {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            padding: 10px; text-align: center; cursor: pointer; border-radius: 6px; transition: 0.3s;
         }
-        .direct-btn:hover { border-color: #fff; background: rgba(255,255,255,0.1); }
+        .gift-option:hover { background: rgba(255,255,255,0.1); }
+        .gift-option.selected {
+            border-color: var(--gold-primary); background: rgba(212, 175, 55, 0.1);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
+        }
+        .gift-icon { font-size: 1.2rem; display: block; margin-bottom: 2px; }
+        .gift-name { font-size: 0.6rem; color: #aaa; }
+        .gift-option.selected .gift-name { color: var(--gold-primary); }
 
-        .save-tip { font-size: 0.7rem; color: #666; margin-top: 5px; font-family: var(--font-tech); }
+        /* 迷你切换器 (用于卡片语言) */
+        .card-lang-toggle {
+            display: flex; background: rgba(0,0,0,0.3); border-radius: 4px; padding: 2px;
+            width: fit-content; border: 1px solid #333; margin-bottom: 15px;
+        }
+        .cl-btn {
+            padding: 4px 10px; font-size: 0.6rem; cursor: pointer; color: #666; border-radius: 2px;
+        }
+        .cl-btn.active { background: #333; color: var(--gold-primary); }
 
-        /* 辅助类 */
-        .text-error { color: var(--error-red) !important; }
-        .shake-animation { animation: shake 0.4s ease-in-out; border-color: var(--error-red) !important; }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-        .loader { display: inline-block; width: 14px; height: 14px; border: 2px solid #000; border-radius: 50%; border-top-color: transparent; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: text-bottom; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .back-link { display: block; margin-top: 30px; color: #666; text-decoration: none; font-size: 0.7rem; transition: color 0.3s; letter-spacing: 1px; }
-        .back-link:hover { color: var(--gold-primary); }
-        .status-msg { height: 20px; font-size: 0.75rem; margin-bottom: 20px; color: var(--gold-primary); letter-spacing: 1px; }
+        /* 结果区域 */
+        #result-area { margin-top: 20px; border-top: 1px dashed #333; padding-top: 20px; }
+        .link-box {
+            background: #000; border: 1px solid #333; padding: 10px; font-size: 0.6rem; color: var(--gold-primary);
+            word-break: break-all; margin-bottom: 15px; font-family: monospace; text-align: center;
+        }
 
-        /* =========================================
-           3. GENERATOR STAGE (修复版)
-           使用 position: fixed + z-index: -5 替代 left: -9999px
-           这能解决 html2canvas 无法捕获的问题
-           ========================================= */
-        #card-stage {
-            position: fixed; 
-            top: 0; left: 0; 
-            z-index: -5; /* 在背景后面，但在视口内 */
-            opacity: 0;  /* 用户不可见，但 DOM 存在 */
-            width: 450px; 
-            height: 800px; /* 9:16 Ratio */
-            background-color: #050505;
-            background-image: 
-                radial-gradient(circle at 50% 10%, rgba(212, 175, 55, 0.15), transparent 60%),
-                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.07'/%3E%3C/svg%3E");
-            font-family: var(--font-serif);
-            padding: 40px;
-            box-sizing: border-box;
+        /* ================= 4. 预览卡片 ================= */
+        .preview-label {
+            color: var(--gold-primary); font-family: var(--font-tech); font-size: 0.7rem; 
+            margin-bottom: 10px; letter-spacing: 2px; text-align: center; width: 100%;
+        }
+
+        #preview-card {
+            position: relative; width: 100%; aspect-ratio: 9/16; background-color: #000;
+            border: 1px solid #333; margin: 0 auto; border-radius: 4px; overflow: hidden;
             display: flex; flex-direction: column; justify-content: space-between;
-            border: 1px solid #222;
-            /* 确保文本渲染优化 */
-            -webkit-font-smoothing: antialiased;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
 
-        /* 装饰角标 */
-        #card-stage::before, #card-stage::after { content: ''; position: absolute; width: 30px; height: 30px; border: 2px solid var(--gold-primary); pointer-events: none; }
-        #card-stage::before { top: 20px; left: 20px; border-right: none; border-bottom: none; }
-        #card-stage::after { bottom: 20px; right: 20px; border-left: none; border-top: none; }
+        .dynamic-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        .bg-mask {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.35); z-index: 2; pointer-events: none;
+        }
+
+        .card-content { position: relative; z-index: 5; height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: 25px; }
         
-        .card-inner-frame { position: absolute; top: 20px; right: 20px; width: 30px; height: 30px; border-top: 2px solid var(--gold-primary); border-right: 2px solid var(--gold-primary); }
-        .card-inner-frame-bl { position: absolute; bottom: 20px; left: 20px; width: 30px; height: 30px; border-bottom: 2px solid var(--gold-primary); border-left: 2px solid var(--gold-primary); }
-
-        /* 卡片内容 */
-        .card-header { text-align: center; border-bottom: 1px solid rgba(212, 175, 55, 0.3); padding-bottom: 20px; margin-bottom: 20px; }
-        .card-title { font-family: var(--font-title); color: var(--gold-primary); font-size: 28px; letter-spacing: 4px; font-weight: 700; text-shadow: 0 0 10px rgba(212, 175, 55, 0.3); }
-        .card-subtitle { font-family: var(--font-tech); color: #666; font-size: 10px; letter-spacing: 6px; margin-top: 5px; }
-
-        .card-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
-        .ticket-type { 
-            border: 1px solid var(--gold-primary); color: var(--gold-primary); padding: 4px 12px; 
-            font-family: var(--font-tech); font-size: 12px; letter-spacing: 2px; margin-bottom: 30px; 
-            background: rgba(212, 175, 55, 0.05);
+        .card-frame {
+            position: absolute; top: 12px; left: 12px; right: 12px; bottom: 12px;
+            border: 1px solid rgba(212, 175, 55, 0.3); pointer-events: none; z-index: 6;
         }
-        .user-chip {
-            background: linear-gradient(135deg, #222 0%, #111 100%);
-            border: 1px solid #444; border-left: 4px solid var(--gold-primary);
-            padding: 10px 30px; margin-bottom: 40px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        .card-frame::before {
+            content: ''; position: absolute; top: -1px; left: 50%; transform: translateX(-50%);
+            width: 60px; height: 2px; background: #000;
         }
-        .user-id-label { font-size: 9px; color: #555; font-family: var(--font-tech); display: block; margin-bottom: 2px; }
-        .user-id-val { font-family: var(--font-tech); font-size: 20px; color: #ddd; letter-spacing: 2px; text-shadow: 0 2px 2px rgba(0,0,0,0.8); }
 
-        .card-message-box { width: 100%; text-align: center; margin-bottom: 40px; }
-        .card-message { font-family: var(--font-serif); font-size: 22px; color: #fff; line-height: 1.8; font-weight: 300; font-style: italic; }
-        .quote-mark { color: var(--gold-primary); font-size: 30px; font-family: serif; opacity: 0.5; vertical-align: -5px; }
+        .c-header { text-align: center; margin-top: 10px; }
+        .c-title { font-family: var(--font-title); color: var(--gold-primary); font-size: 1.4rem; font-weight: bold; text-shadow: 0 0 10px rgba(0,0,0,0.8); }
+        .c-sub { font-family: var(--font-tech); color: #ccc; font-size: 0.6rem; letter-spacing: 2px; }
 
-        .card-footer { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 25px; }
-        .qr-container { background: transparent; padding: 0; }
-        .scan-hint { text-align: right; }
-        .scan-text { display: block; font-family: var(--font-tech); color: var(--gold-primary); font-size: 14px; letter-spacing: 2px; font-weight: bold; margin-bottom: 4px; }
-        .scan-sub { display: block; font-family: var(--font-tech); color: #555; font-size: 9px; letter-spacing: 1px; }
+        .c-body { text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px; }
+        .c-to { font-family: var(--font-tech); font-size: 0.8rem; color: var(--gold-primary); letter-spacing: 1px; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
+        .c-wish { font-family: var(--font-body); color: #fff; font-size: 1.1rem; line-height: 1.6; text-shadow: 0 2px 5px #000; width: 100%; font-style: italic; white-space: pre-wrap; word-break: break-word; }
+        .c-from { font-family: var(--font-tech); font-size: 0.7rem; color: #ccc; align-self: flex-end; letter-spacing: 1px; }
 
-        /* MODAL (For Fullscreen View) */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 1000;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(5px);
+        .c-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px; padding: 0 2px; }
+        .c-qr { background: #000; border: 1px solid var(--gold-primary); padding: 3px; width: 60px; height: 60px; display:flex; justify-content:center; align-items:center; }
+        .c-qr-placeholder { color: #333; font-size: 0.5rem; text-align: center; } 
+        .c-meta { text-align: right; font-size: 0.45rem; color: #666; font-family: var(--font-tech); line-height: 1.4; letter-spacing: 0.5px; }
+        .c-meta span.highlight { color: var(--gold-primary); }
+
+        .save-btn {
+            background: transparent; border: 1px solid var(--gold-primary); color: var(--gold-primary);
+            width: 100%; padding: 10px; margin-top: 15px; font-family: var(--font-tech); cursor: pointer; transition: 0.3s;
         }
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .modal-content { max-width: 90%; max-height: 90%; border: 1px solid #333; overflow: hidden; border-radius: 8px; transform: scale(0.95); transition: transform 0.3s; }
-        .modal-overlay.active .modal-content { transform: scale(1); }
-        .modal-img { width: 100%; height: auto; display: block; }
-        .close-modal { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 30px; cursor: pointer; width: 40px; height: 40px; text-align: center; line-height: 40px; background: rgba(255,255,255,0.1); border-radius: 50%; }
+        .save-btn:hover { background: var(--gold-primary); color: #000; }
 
+        .text-error { color: var(--error-red) !important; border-color: var(--error-red) !important; }
+        .shake { animation: shake 0.4s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .loader { width: 12px; height: 12px; border: 2px solid #000; border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; margin-right: 5px; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 隐藏的高清渲染舞台 */
+        #render-stage-wrapper { position: absolute; width: 0; height: 0; overflow: hidden; z-index: -999; }
+        #hd-render-card { width: 450px; height: 800px; position: relative; background: #000; display: flex; flex-direction: column; justify-content: space-between; }
     </style>
 </head>
 <body>
 
     <div class="ambient-bg"></div>
-    <div class="noise-overlay"></div>
 
-    <div class="console-card">
-        <div class="console-header">CYBER GIFT 2026</div>
-        <div class="console-sub">SECURE ACCESS TERMINAL</div>
-
-        <div id="step1" class="form-section">
-            <div class="input-group">
-                <input type="text" id="keyCode" class="access-input" placeholder="ENTER ACCESS KEY" autocomplete="off" maxlength="30">
-            </div>
-            <div class="status-msg" id="status1">_WAITING FOR SIGNAL...</div>
-            <button id="btnStep1" class="verify-btn">
-                <span class="btn-text">CONNECT TO SERVER</span>
-            </button>
-        </div>
-
-        <div id="step2" class="form-section hidden">
-            <div class="input-group">
-                <label class="input-label" style="text-align: center; margin-bottom: 15px;">SELECT VISUALIZATION PROTOCOL</label>
-                <div class="gift-grid">
-                    <div class="gift-option selected" onclick="selectGift('stars')">
-                        <span class="gift-icon">🌌</span><span class="gift-name">GALAXY</span>
-                    </div>
-                    <div class="gift-option" onclick="selectGift('firework')">
-                        <span class="gift-icon">🎆</span><span class="gift-name">FIREWORK</span>
-                    </div>
-                    <div class="gift-option" onclick="selectGift('love')">
-                        <span class="gift-icon">❤️</span><span class="gift-name">LOVE<span class="platform-tag">(PC)</span></span>
-                    </div>
-                    <div class="gift-option" onclick="selectGift('portal')">
-                        <span class="gift-icon">🔯</span><span class="gift-name">PORTAL<span class="platform-tag">(PC)</span></span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="input-group">
-                <label class="input-label">ENCODED MESSAGE (WISH)</label>
-                <textarea id="inputWish" class="access-input step-2-input" placeholder="e.g. Happy New Year!&#10;May all your dreams come true.&#10;Love you forever." maxlength="100"></textarea>
-            </div>
-
-            <div class="status-msg" id="status2">_READY TO INITIALIZE</div>
-
-            <button id="btnStep2" class="verify-btn">
-                <span class="btn-text">GENERATE UNIVERSE</span>
-            </button>
-
-            <div id="result-area" class="hidden">
-                <img id="resultCardPreview" class="generated-card-preview" alt="Generating Access Card..." onclick="openModal()">
-                <div class="save-tip">▲ CLICK TO EXPAND / LONG PRESS TO SAVE</div>
-
-                <div class="link-actions">
-                    <div class="result-title">
-                        <span>ACCESS LINK GENERATED</span>
-                        <span style="color:#0f0; font-size:10px;">● ONLINE</span>
-                    </div>
-                    <div id="generatedUrl" class="url-box">Generating...</div>
-                    <div class="btn-group">
-                        <button id="btnCopy" class="copy-btn" onclick="copyToClipboard()">
-                            <span id="copyIcon">📋</span> 
-                            <span id="copyText">COPY</span>
-                        </button>
-                        <a id="btnDirect" href="#" target="_blank" class="direct-btn">OPEN &gt;</a>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <a href="index.html" class="back-link">&lt; TERMINATE SESSION</a>
+    <div class="lang-switch-container">
+        <div class="lang-btn active" onclick="setUILang('zh')" id="lang-btn-zh">CN</div>
+        <div class="lang-btn" onclick="setUILang('en')" id="lang-btn-en">EN</div>
     </div>
 
-    <div id="card-stage">
-        <div class="card-inner-frame"></div>
-        <div class="card-inner-frame-bl"></div>
-        <div class="card-header">
-            <div class="card-title">CYBER GIFT</div>
-            <div class="card-subtitle">DIGITAL VOWS // ENCRYPTED</div>
-        </div>
-        <div class="card-body">
-            <div class="ticket-type" id="cardTicketType">SINGLE PASS</div>
-            <div class="user-chip">
-                <span class="user-id-label">ACCESS ID</span>
-                <span class="user-id-val" id="cardUserId">NO.0000</span>
-            </div>
-            <div class="card-message-box">
-                <div class="card-message">
-                    <span class="quote-mark">“</span>
-                    <span id="cardMessageText">Happy New Year</span>
-                    <span class="quote-mark">”</span>
+    <div class="studio-container">
+        <div class="console-column">
+            <div class="console-card">
+                <div class="console-header">CYBER GIFT 2026</div>
+                <div class="console-sub" data-i18n="subtitle">SECURE GIFT TERMINAL</div>
+
+                <div id="step1">
+                    <div class="input-group">
+                        <input type="text" id="keyCode" class="access-input" style="text-align:center;" placeholder="输入兑换码 / ENTER REDEEM CODE" autocomplete="off" data-i18n-placeholder="code_placeholder">
+                    </div>
+                    <button class="verify-btn" onclick="verifyCode()">
+                        <span id="btn1Text" data-i18n="verify_btn">验证代码 / VERIFY CODE</span>
+                    </button>
+                </div>
+
+                <div id="step2" class="hidden">
+                    
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <div style="font-size:0.6rem; color:#888;" data-i18n="select_style">选择视觉协议 / SELECT VISUAL PROTOCOL</div>
+                    </div>
+
+                    <div class="gift-grid">
+                        <div class="gift-option selected" onclick="selectType('stars')">
+                            <span class="gift-icon">🌌</span><span class="gift-name" data-i18n="style_stars">星河</span>
+                        </div>
+                        <div class="gift-option" onclick="selectType('love')">
+                            <span class="gift-icon">❤️</span><span class="gift-name" data-i18n="style_love">恋歌</span>
+                        </div>
+                        <div class="gift-option" onclick="selectType('firework')">
+                            <span class="gift-icon">🎆</span><span class="gift-name" data-i18n="style_fire">花火</span>
+                        </div>
+                        <div class="gift-option" onclick="selectType('portal')">
+                            <span class="gift-icon">🔯</span><span class="gift-name" data-i18n="style_portal">法阵</span>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                         <span class="input-label" data-i18n="card_lang_label">卡片显示语言 / CARD DISPLAY LANGUAGE</span>
+                         <div class="card-lang-toggle">
+                             <div class="cl-btn active" id="cl-en" onclick="setCardLang('en')">ENGLISH</div>
+                             <div class="cl-btn" id="cl-zh" onclick="setCardLang('zh')">中文 (CHINESE)</div>
+                         </div>
+                    </div>
+
+                    <div class="input-group">
+                        <span class="input-label optional" data-i18n="label_to" data-opt="(选填)">接收者 / TO</span>
+                        <input type="text" id="inputTo" class="access-input" placeholder="Name" maxlength="20" data-i18n-placeholder="placeholder_name">
+                    </div>
+
+                    <div class="input-group">
+                        <span class="input-label" data-i18n="label_card_text">贺卡短语 (图片上) / CARD TEXT</span>
+                        <textarea id="inputCardText" class="access-input" rows="3" placeholder="e.g. Happy New Year" maxlength="50" data-i18n-placeholder="placeholder_card_text" style="height:auto; min-height:60px;"></textarea>
+                        <div class="input-helper">
+                            <span data-i18n="helper_card_text_1">* 每一行会自动加上引号。</span><br>
+                            <span data-i18n="helper_card_text_2">* 最多3行，总字数限制50字。</span>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <span class="input-label" data-i18n="label_qr_msg">隐藏祝福 (二维码内) / SECRET MESSAGE</span>
+                        <textarea id="inputWish" class="access-input" placeholder="Write your long secret message here..." maxlength="200" data-i18n-placeholder="placeholder_wish"></textarea>
+                        <div class="input-helper">
+                            <span data-i18n="helper_qr_msg_1">* 此信息隐藏在二维码中。</span><br>
+                            <span data-i18n="helper_qr_msg_2">* 对方扫码后才能看到。</span>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <span class="input-label optional" data-i18n="label_from" data-opt="(选填)">发送者 / FROM</span>
+                        <input type="text" id="inputFrom" class="access-input" placeholder="Your Name" maxlength="20" data-i18n-placeholder="placeholder_your_name">
+                    </div>
+
+                    <button class="verify-btn" onclick="finalizeGift()">
+                        <span id="btn2Text" data-i18n="btn_generate">生成礼物 / GENERATE GIFT</span>
+                    </button>
+                </div>
+
+                <div id="result-area" class="hidden">
+                    <div style="text-align:center; color:var(--gold-primary); margin-bottom:5px;" data-i18n="msg_generated">GIFT GENERATED</div>
+                    <div class="link-box" id="finalLink">Processing...</div>
+                    
+                    <div style="text-align:center; font-size:0.6rem; color:#888; margin-bottom:15px; line-height:1.4;">
+                        <span style="color:var(--error-red);" data-i18n="tip_save_safely">⚠️ 请务必保存好您的图片与链接，这是访问您的礼物的唯一途径。失去则无法找回。</span>
+                    </div>
+                    
+                    <button class="save-btn" onclick="downloadImage()" data-i18n="btn_download">⬇ 保存卡片图片 / SAVE CARD IMAGE</button>
+                    <button class="verify-btn secondary-btn" onclick="location.reload()" data-i18n="btn_restart">↺ 再兑换一个 / REDEEM ANOTHER</button>
                 </div>
             </div>
         </div>
-        <div class="card-footer">
-            <div class="qr-container">
-                <div id="cardQrcode"></div>
+
+        <div class="preview-column" id="previewColumn">
+            <div class="preview-label" data-i18n="preview_title">/// 实时预览 REAL-TIME PREVIEW ///</div>
+            
+            <div id="preview-card">
+                <canvas id="preview-canvas" class="dynamic-canvas"></canvas>
+                <div class="bg-mask"></div>
+                <div class="card-frame"></div>
+                
+                <div class="card-content">
+                    <div class="c-header">
+                        <div class="c-title">CYBER GIFT</div>
+                        <div class="c-sub">2026 EDITION</div>
+                    </div>
+                    
+                    <div class="c-body">
+                        <div class="c-to" id="cardTo">TO: -</div>
+                        <div class="c-wish" id="cardTextDisplay">Happy New Year</div>
+                        <div class="c-from" id="cardFrom">FROM: -</div>
+                    </div>
+
+                    <div class="c-footer">
+                        <div class="c-qr" id="qrcode">
+                            <div class="c-qr-placeholder">[QR]</div>
+                        </div>
+                        <div class="c-meta">
+                            <span id="cardId">ID: PENDING</span><br>
+                            <span class="highlight" data-i18n="preview_mode_text">PREVIEW MODE</span><br>
+                            <span id="cardDate">...</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="scan-hint">
-                <span class="scan-text">SCAN TO DECRYPT</span>
-                <span class="scan-sub" id="cardDate">MINTED AT 2026.01.01</span>
+            
+            <div class="input-helper" style="text-align:center; margin-top:10px;" data-i18n="preview_hint">
+                二维码将在最后一步生成。
             </div>
         </div>
     </div>
 
-    <div class="modal-overlay" id="cardModal" onclick="closeModal(event)">
-        <div class="close-modal" onclick="closeModal(event)">×</div>
-        <div class="modal-content">
-            <img id="modalCardImg" class="modal-img" alt="Access Card">
+    <div id="render-stage-wrapper">
+        <div id="hd-render-card" style="width: 400px; height: 711px; position: relative; background: #000; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;">
+            <canvas id="hd-canvas" style="position:absolute; top:0; left:0; z-index:0;"></canvas>
+            <div class="bg-mask"></div>
+            <div class="card-frame" style="top:15px; left:15px; right:15px; bottom:15px;"></div>
+            
+            <div class="card-content" style="padding:25px; height:100%; display:flex; flex-direction:column; justify-content:space-between; position:relative; z-index:5;">
+                <div class="c-header" style="margin-top:10px;">
+                    <div class="c-title" style="font-size:1.6rem;">CYBER GIFT</div>
+                    <div class="c-sub" style="font-size:0.7rem;">2026 EDITION</div>
+                </div>
+                
+                <div class="c-body" style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:15px;">
+                    <div class="c-to" id="hd-cardTo" style="font-size:0.9rem; width:100%; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">TO: -</div>
+                    
+                    <div class="c-wish" id="hd-cardWish" style="font-size:1.2rem; line-height:1.6; width:100%; font-style:italic; white-space: pre-wrap; word-break: break-word;">-</div>
+                    
+                    <div class="c-from" id="hd-cardFrom" style="font-size:0.8rem; align-self:flex-end;">FROM: -</div>
+                </div>
+
+                <div class="c-footer" style="display:flex; justify-content:space-between; align-items:flex-end;">
+                    <div class="c-qr" id="hd-qrcode" style="width:86px; height:86px; padding:8px; background:#000; border:1px solid #D4AF37; display:flex; justify-content:center; align-items:center;"></div>
+                    <div class="c-meta" style="font-size:0.55rem; text-align:right; line-height:1.4;">
+                        <span id="hd-cardId">ID: ....</span><br>
+                        <span class="highlight">VERIFIED</span><br>
+                        <span id="hd-cardDate">MINTED: ...</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // ================= 配置区域 =================
+        // ================= 配置 =================
         const API_BASE = "https://vimalin.xyz:8443/api";
         const GIFT_URLS = {
             'stars': "https://cybergift.store/stars/",
@@ -393,248 +405,538 @@
             'love': "https://cybergift.store/love/",
             'portal': "https://cybergift.store/magicframe/"
         };
-        // ===========================================
-
-        let currentCode = "";
-        let selectedType = "stars";
-        let finalLink = "";
-
-        const UI = {
-            step1: document.getElementById('step1'),
-            step2: document.getElementById('step2'),
-            inputCode: document.getElementById('keyCode'),
-            inputWish: document.getElementById('inputWish'),
-            btn1: document.getElementById('btnStep1'),
-            btn2: document.getElementById('btnStep2'),
-            status1: document.getElementById('status1'),
-            status2: document.getElementById('status2'),
-            options: document.querySelectorAll('.gift-option'),
-            
-            resultArea: document.getElementById('result-area'),
-            generatedUrl: document.getElementById('generatedUrl'),
-            btnCopy: document.getElementById('btnCopy'),
-            btnDirect: document.getElementById('btnDirect'),
-            copyText: document.getElementById('copyText'),
-            copyIcon: document.getElementById('copyIcon'),
-            
-            // Card Elements
-            resultCardPreview: document.getElementById('resultCardPreview'),
-            cardStage: document.getElementById('card-stage'),
-            cardModal: document.getElementById('cardModal'),
-            modalCardImg: document.getElementById('modalCardImg'),
-            
-            cardUserId: document.getElementById('cardUserId'),
-            cardMessageText: document.getElementById('cardMessageText'),
-            cardQrcode: document.getElementById('cardQrcode'),
-            cardDate: document.getElementById('cardDate'),
-            cardTicketType: document.getElementById('cardTicketType')
+        
+        // ================= 语言包 =================
+        const i18n = {
+            zh: {
+                // title: "赛博贺卡 2026",  <-- 这行我删掉了，因为标题不用翻译了 
+                subtitle: "安全礼品终端",
+                code_placeholder: "输入兑换码",
+                verify_btn: "验证代码",
+                select_style: "选择视觉协议",
+                style_stars: "星河",
+                style_love: "恋歌",
+                style_fire: "花火",
+                style_portal: "法阵",
+                card_lang_label: "贺卡显示语言 (控制图片文字)",
+                label_to: "接收者 (TO)",
+                label_from: "发送者 (FROM)",
+                label_card_text: "贺卡短语 (图片上)",
+                helper_card_text_1: "* 手动换行将为每一行添加引号",
+                helper_card_text_2: "* 最多支持 3 行，总限 50 字",
+                label_qr_msg: "隐形祝福 (二维码内)",
+                helper_qr_msg_1: "* 扫码后才能看到的长文本",
+                helper_qr_msg_2: "* 可写下你的心里话",
+                btn_generate: "生成礼物",
+                msg_generated: "礼物已生成",
+                btn_download: "⬇ 保存卡片图片",
+                btn_restart: "↺ 再兑换一个",
+                preview_title: "/// 实时效果预览 ///",
+                preview_mode_text: "预览模式",
+                verified_text: "已验证",
+                preview_hint: "二维码将在最后一步生成",
+                opt_text: "(选填)",
+                // 新增的输入框提示词 
+                placeholder_name: "对方昵称",
+                placeholder_card_text: "例如：新年快乐",
+                placeholder_wish: "在这里写下你的秘密祝福...",
+                placeholder_your_name: "你的署名",
+                // 新增
+                tip_save_safely: "⚠️ 请务必保存好您的图片与链接，这是找回礼物的唯一凭证。",
+                alert_copy_done: "✅ 链接已复制到剪贴板！\n\n即将为您自动下载贺卡图片，请查收。",
+                // 卡片内部文字 (ZH)
+                card_to: "致",
+                card_from: "自",
+                card_minted: "铸造",
+                default_card_text: "新年快乐"
+            },
+            en: {
+                // title: "CYBER GIFT 2026", 
+                subtitle: "SECURE GIFT TERMINAL",
+                code_placeholder: "ENTER REDEEM CODE",
+                verify_btn: "VERIFY CODE",
+                select_style: "SELECT VISUAL PROTOCOL",
+                style_stars: "STARS",
+                style_love: "LOVE",
+                style_fire: "FIRE",
+                style_portal: "PORTAL",
+                card_lang_label: "CARD DISPLAY LANGUAGE",
+                label_to: "TO (RECIPIENT)",
+                label_from: "FROM (SENDER)",
+                label_card_text: "CARD TEXT (ON IMAGE)",
+                helper_card_text_1: "* Manual new lines get quoted separately",
+                helper_card_text_2: "* Max 3 lines, 50 chars limit",
+                label_qr_msg: "DIGITAL MESSAGE (IN QR)",
+                helper_qr_msg_1: "* Hidden inside the QR code",
+                helper_qr_msg_2: "* Revealed after scanning",
+                btn_generate: "GENERATE GIFT",
+                msg_generated: "GIFT GENERATED",
+                btn_download: "⬇ SAVE CARD IMAGE",
+                btn_restart: "↺ REDEEM ANOTHER",
+                preview_title: "/// REAL-TIME PREVIEW ///",
+                preview_mode_text: "PREVIEW MODE",
+                verified_text: "VERIFIED",
+                preview_hint: "QR code generated at final step",
+                opt_text: "(OPTIONAL)",
+                // 新增的输入框提示词 
+                placeholder_name: "Name",
+                placeholder_card_text: "e.g. Happy New Year",
+                placeholder_wish: "Write your long secret message here...",
+                placeholder_your_name: "Your Name",
+                // 新增
+                tip_save_safely: "⚠️ Please save your image and link safely. They are the only keys to access your gift.",
+                alert_copy_done: "✅ Link copied to clipboard!\n\nDownloading card image automatically...",
+                // Card Internal Text (EN)
+                card_to: "TO",
+                card_from: "FROM",
+                card_minted: "MINTED",
+                default_card_text: "Happy New Year"
+            }
         };
 
-        // --- 事件绑定 ---
-        UI.btn1.addEventListener('click', verifyCode);
-        UI.inputCode.addEventListener('keypress', (e) => { if(e.key === 'Enter') verifyCode(); });
-        UI.inputCode.addEventListener('input', () => resetStatus(UI.inputCode, UI.status1, "_WAITING FOR SIGNAL..."));
-        UI.btn2.addEventListener('click', finalizeGift);
+        let currentUILang = 'zh'; // 默认UI中文
+        let currentCardLang = 'en'; // 默认卡片英文 (为了酷炫)
+        let currentCode = "";
+        let selectedType = 'stars';
+
+        // 初始化
+        document.addEventListener("DOMContentLoaded", () => {
+            const inputs = ['inputTo', 'inputFrom', 'inputCardText'];
+            inputs.forEach(id => {
+                document.getElementById(id).addEventListener('input', updateRealTimeUI);
+            });
+            
+            // 新增：限制贺卡短语的行数 (最多3行)
+            document.getElementById('inputCardText').addEventListener('input', function() {
+                const lines = this.value.split('\n');
+                if (lines.length > 3) {
+                    this.value = lines.slice(0, 3).join('\n');
+                }
+            });
+
+            // 初始化语言
+            setUILang('zh');
+            updateRealTimeUI();
+        });
+
+        // --- 语言切换逻辑 ---
+        function setUILang(lang) {
+            currentUILang = lang;
+            
+            // 更新按钮状态
+            document.getElementById('lang-btn-zh').classList.toggle('active', lang === 'zh');
+            document.getElementById('lang-btn-en').classList.toggle('active', lang === 'en');
+
+            // 更新所有文本元素
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if(i18n[lang][key]) el.innerText = i18n[lang][key];
+            });
+
+            // 更新 placeholder
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if(i18n[lang][key]) el.placeholder = i18n[lang][key];
+            });
+            
+            // 更新选填提示 (伪元素无法直接改，用 data-attr 代理)
+            const optText = i18n[lang]['opt_text'];
+            document.querySelectorAll('.input-label.optional').forEach(el => {
+                el.setAttribute('data-opt', optText);
+            });
+        }
+
+        function setCardLang(lang) {
+            currentCardLang = lang;
+            document.getElementById('cl-zh').classList.toggle('active', lang === 'zh');
+            document.getElementById('cl-en').classList.toggle('active', lang === 'en');
+            updateRealTimeUI(); // 立即刷新预览
+        }
 
         // --- Step 1: 验证 ---
         async function verifyCode() {
-            const code = UI.inputCode.value.trim();
-            if (!code) return triggerError(UI.inputCode, UI.status1, "ERROR: INPUT EMPTY");
+            const input = document.getElementById('keyCode');
+            const btn = document.querySelector('.verify-btn');
+            const btnText = document.getElementById('btn1Text');
+            const code = input.value.trim();
 
-            setLoading(UI.btn1, true, "VERIFYING...");
+            if (!code) {
+                input.classList.add('text-error', 'shake');
+                setTimeout(() => input.classList.remove('shake'), 500);
+                return;
+            }
+
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="loader"></span> ...';
 
             try {
-                const response = await fetch(`${API_BASE}/verify`, {
+                const res = await fetch(`${API_BASE}/verify`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: code })
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ code })
                 });
-
-                const data = await response.json();
+                const data = await res.json();
 
                 if (data.success && data.valid) {
                     currentCode = code;
-                    transitionToStep2();
+                    document.getElementById('step1').classList.add('hidden');
+                    document.getElementById('step2').classList.remove('hidden');
+                    document.getElementById('step2').classList.add('fade-in');
+                    
+                    const previewCol = document.getElementById('previewColumn');
+                    previewCol.classList.add('active'); 
+                    setTimeout(() => {
+                        previewCol.classList.add('visible');
+                        updateRealTimeUI();
+                    }, 50);
+                    
                 } else {
-                    triggerError(UI.inputCode, UI.status1, (data.message || "ACCESS DENIED").toUpperCase());
+                    alert(data.message || "Invalid Code");
+                    input.value = "";
                 }
-            } catch (error) {
-                console.error(error);
-                triggerError(UI.inputCode, UI.status1, "CONNECTION FAILURE");
+            } catch (e) {
+                console.error(e);
+                alert("Network Error");
             } finally {
-                setLoading(UI.btn1, false, "CONNECT TO SERVER");
+                btn.disabled = false;
+                btnText.innerText = i18n[currentUILang]['verify_btn'];
             }
         }
 
-        // --- Step 2: 核销 & 自动生成 ---
-        async function finalizeGift() {
-            const wish = UI.inputWish.value.trim() || "Best Wishes";
+        // --- UI 更新逻辑 (实时) ---
+        function selectType(type) {
+            selectedType = type;
+            document.querySelectorAll('.gift-option').forEach(el => el.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+            updateRealTimeUI();
+        }
 
-            setLoading(UI.btn2, true, "INITIALIZING UNIVERSE...");
+        function updateRealTimeUI() {
+            const to = document.getElementById('inputTo').value.trim();
+            const from = document.getElementById('inputFrom').value.trim();
+            
+            // --- 修改开始: 处理多行文字 ---
+            let rawText = document.getElementById('inputCardText').value; // 不去除两端空格，保留换行习惯
+            let displayHtml = "";
+
+            if (!rawText.trim()) {
+                // 如果为空，使用默认文案
+                displayHtml = `“ ${i18n[currentCardLang]['default_card_text']} ”`;
+            } else {
+                // 按换行符分割，去除空行，然后给每一行加引号
+                const lines = rawText.split('\n').filter(line => line.trim() !== "");
+                displayHtml = lines.map(line => `“ ${line.trim()} ”`).join('\n');
+            }
+            // --- 修改结束 ---
+
+            // 获取当前卡片语言的标签
+            const langObj = i18n[currentCardLang];
+            const labelTo = langObj['card_to'];
+            const labelFrom = langObj['card_from'];
+            const labelMinted = langObj['card_minted'];
+
+            // 更新 DOM
+            const elTo = document.getElementById('cardTo');
+            const elFrom = document.getElementById('cardFrom');
+            
+            elTo.innerText = to ? `${labelTo}: ${to.toUpperCase()}` : `${labelTo}: -`;
+            elFrom.innerText = from ? `${labelFrom}: ${from.toUpperCase()}` : `${labelFrom}: -`;
+            
+            // 这里用 innerText 赋值，white-space: pre-wrap 会处理换行
+            document.getElementById('cardTextDisplay').innerText = displayHtml;
+
+            // 刷新日期
+            const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '.');
+            document.getElementById('cardDate').innerText = `${labelMinted}: ${dateStr}`;
+
+            // 重绘 Canvas
+            const prevCanvas = document.getElementById('preview-canvas');
+            if (prevCanvas.offsetWidth > 0) {
+                 prevCanvas.width = prevCanvas.offsetWidth;
+                 prevCanvas.height = prevCanvas.offsetHeight;
+                 drawThemeEffect(prevCanvas, selectedType);
+            }
+        }
+
+        // --- Step 2: 提交并生成 ---
+        async function finalizeGift() {
+            const toName = document.getElementById('inputTo').value.trim();
+            const fromName = document.getElementById('inputFrom').value.trim();
+            const wish = document.getElementById('inputWish').value.trim() || "Best Wishes";
+            // 兼容 text 或 textarea，直接取 value 即可
+            const cardText = document.getElementById('inputCardText').value.trim() || i18n[currentCardLang]['default_card_text'];
+            
+            const btnText = document.getElementById('btn2Text');
+            const btn = btnText.parentElement;
+
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="loader"></span> ...';
 
             try {
                 const payload = {
                     code: currentCode,
-                    payload: { wish: wish }
+                    payload: { wish, to: toName, from: fromName }
                 };
 
-                const response = await fetch(`${API_BASE}/finalize`, {
+                const res = await fetch(`${API_BASE}/finalize`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(payload)
                 });
-
-                const data = await response.json();
+                const data = await res.json();
 
                 if (data.success) {
                     const encryptedCode = data.encryptedCode;
                     let targetBaseUrl = GIFT_URLS[selectedType];
                     const connector = targetBaseUrl.includes("?") ? "&" : "?";
-                    finalLink = `${targetBaseUrl}${connector}code=${encryptedCode}`;
+                    const fullLink = `${targetBaseUrl}${connector}code=${encryptedCode}`;
 
-                    // 1. 更新链接界面
-                    UI.generatedUrl.innerText = finalLink;
-                    UI.btnDirect.href = finalLink;
-                    UI.status2.innerText = "_DATA ENCRYPTED & MINTED";
+                    // 1. 切换界面
+                    document.getElementById('step2').classList.add('hidden');
+                    document.getElementById('result-area').classList.remove('hidden');
+                    document.getElementById('result-area').classList.add('fade-in');
+                    document.getElementById('finalLink').innerText = fullLink;
 
-                    // 2. 自动生成卡片 (关键修改：在这里直接调用)
-                    setLoading(UI.btn2, true, "MINTING CARD..."); // 更新按钮文字
-                    await autoGenerateCard(wish);
+                    document.getElementById('cardId').innerText = `NO.${Math.floor(Math.random()*9000)+1000}`;
+                    document.querySelector('.c-meta .highlight').innerText = i18n[currentUILang]['verified_text'];
 
-                    // 3. 界面切换
-                    UI.btn2.classList.add('hidden'); // 隐藏按钮
-                    UI.resultArea.classList.remove('hidden'); // 显示结果
-                    copyToClipboard(true);
+                    // 2. 渲染二维码和高清图
+                    generateQRCodes(fullLink);
+                    renderHDCard(toName, fromName, cardText, fullLink);
+
+                    // 3. 【新增功能】自动复制链接 + 提示 + 自动下载
+                    // 等待一小会儿确保DOM渲染完成
+                    setTimeout(async () => {
+                        try {
+                            // 尝试写入剪贴板
+                            await navigator.clipboard.writeText(fullLink);
+                            // 弹出成功提示
+                            alert(i18n[currentUILang]['alert_copy_done']);
+                        } catch (err) {
+                            console.error("Auto copy failed:", err);
+                            // 如果复制失败（比如浏览器权限拦截），至少不影响下载，不弹复制成功的窗，直接下载
+                        }
+
+                        // 自动触发下载 (给 alert 一个关闭的时间缓冲)
+                        downloadImage();
+                    }, 500);
 
                 } else {
-                    UI.status2.classList.add('text-error');
-                    UI.status2.innerText = "ERROR: " + data.message;
-                    setLoading(UI.btn2, false, "RETRY GENERATION");
+                    alert("Error: " + data.message);
                 }
-            } catch (error) {
-                console.error(error);
-                UI.status2.classList.add('text-error');
-                UI.status2.innerText = "SYSTEM FAILURE";
-                setLoading(UI.btn2, false, "RETRY GENERATION");
-            }
-        }
-
-        // --- 核心：自动生成卡片逻辑 ---
-        async function autoGenerateCard(wishText) {
-            try {
-                // 1. 填充数据
-                UI.cardMessageText.innerText = wishText;
-                const randomId = Math.floor(Math.random() * 9000) + 1000;
-                UI.cardUserId.innerText = `NO.2026-${randomId}`;
-                const now = new Date();
-                const dateStr = now.toISOString().split('T')[0].replace(/-/g, '.');
-                UI.cardDate.innerText = `MINTED AT ${dateStr}`;
-                UI.cardTicketType.innerText = (selectedType === 'love') ? "COUPLE PASS" : "SINGLE PASS";
-
-                // 2. 生成二维码
-                UI.cardQrcode.innerHTML = ""; 
-                new QRCode(UI.cardQrcode, {
-                    text: finalLink,
-                    width: 80,
-                    height: 80,
-                    colorDark : "#D4AF37",
-                    colorLight : "transparent", // 必须是透明以融合背景
-                    correctLevel : QRCode.CorrectLevel.H
-                });
-
-                // 3. 等待资源就绪
-                // 关键修复：给二维码一点时间渲染到DOM中
-                await new Promise(resolve => setTimeout(resolve, 300));
-                await document.fonts.ready;
-
-                // 4. 截图
-                const canvas = await html2canvas(UI.cardStage, {
-                    scale: 3, 
-                    backgroundColor: null,
-                    useCORS: true,
-                    allowTaint: true, // 允许跨域图片(SVG DataURI)
-                    logging: false
-                });
-
-                // 5. 显示
-                const imgData = canvas.toDataURL("image/png");
-                UI.resultCardPreview.src = imgData;
-                UI.modalCardImg.src = imgData;
-
-                return true;
-
-            } catch (err) {
-                console.error("Card Gen Error:", err);
-                // 即使生成失败，也不要阻断流程，放一张占位图或仅显示链接
-                UI.resultCardPreview.alt = "Card generation failed.";
-                return false;
-            }
-        }
-
-        // --- 辅助函数 ---
-        function openModal() { UI.cardModal.classList.add('active'); }
-        function closeModal(e) { 
-            if(e.target === UI.cardModal || e.target.classList.contains('close-modal')) 
-                UI.cardModal.classList.remove('active'); 
-        }
-
-        function copyToClipboard(isAuto = false) {
-            if (!finalLink) return;
-            navigator.clipboard.writeText(finalLink).then(() => {
-                UI.btnCopy.classList.add('success');
-                UI.copyText.innerText = "COPIED";
-                UI.copyIcon.innerText = "✓";
-                setTimeout(() => {
-                    UI.btnCopy.classList.remove('success');
-                    UI.copyText.innerText = "COPY";
-                    UI.copyIcon.innerText = "📋";
-                }, 2000);
-            }).catch(err => {
-                if (!isAuto) alert("Copy failed.");
-            });
-        }
-
-        window.selectGift = function(type) {
-            selectedType = type;
-            UI.options.forEach(opt => opt.classList.remove('selected'));
-            if(type==='stars') UI.options[0].classList.add('selected');
-            if(type==='firework') UI.options[1].classList.add('selected');
-            if(type==='love') UI.options[2].classList.add('selected');
-            if(type==='portal') UI.options[3].classList.add('selected');
-            UI.status2.innerText = `_TARGET LOCKED: ${type.toUpperCase()}`;
-        };
-
-        function transitionToStep2() {
-            UI.step1.classList.add('hidden');
-            UI.step2.classList.remove('hidden');
-            UI.step2.classList.add('fade-in');
-            setTimeout(() => UI.inputWish.focus(), 500);
-        }
-
-        function setLoading(btn, isLoading, text) {
-            const span = btn.querySelector('.btn-text');
-            if (isLoading) {
-                btn.disabled = true;
-                span.innerHTML = `<span class="loader"></span> ${text}`;
-            } else {
+            } catch (e) {
+                console.error(e);
+                alert("Error");
+            } finally {
                 btn.disabled = false;
-                span.innerText = text;
+                btnText.innerText = i18n[currentUILang]['btn_generate'];
             }
         }
 
-        function triggerError(input, statusEl, msg) {
-            input.classList.add('shake-animation');
-            input.focus();
-            statusEl.classList.add('text-error');
-            statusEl.innerText = msg;
-            if (navigator.vibrate) navigator.vibrate(200);
-            setTimeout(() => input.classList.remove('shake-animation'), 500);
+        function generateQRCodes(url) {
+            const qrOpts = {
+                text: url,
+                colorDark: "#D4AF37",
+                colorLight: "#000000",
+                correctLevel: QRCode.CorrectLevel.H
+            };
+            document.getElementById('qrcode').innerHTML = "";
+            new QRCode(document.getElementById('qrcode'), { ...qrOpts, width: 50, height: 50 });
         }
 
-        function resetStatus(input, statusEl, defaultMsg) {
-            statusEl.classList.remove('text-error');
-            statusEl.innerText = defaultMsg;
+        function renderHDCard(to, from, text, url) { 
+            // 1. 设置画布尺寸匹配新的容器 (400px * 711px) 
+            const hdCanvas = document.getElementById('hd-canvas'); 
+            hdCanvas.width = 400; 
+            hdCanvas.height = 711; 
+            drawThemeEffect(hdCanvas, selectedType); 
+ 
+            // 2. 填充文字 (使用预览图的逻辑，不再强制大字号) 
+            const langObj = i18n[currentCardLang]; 
+            const elTo = document.getElementById('hd-cardTo'); 
+            const elFrom = document.getElementById('hd-cardFrom'); 
+            
+            // 字体类控制 
+            const fontClass = currentCardLang === 'zh' ? 'font-serif' : 'font-mono'; 
+            // 这里为了简单，直接复用样式，如果需要更细致的字体切换可以加 class 
+            
+            elTo.innerText = to ? `${langObj.card_to}: ${to.toUpperCase()}` : ""; 
+            elFrom.innerText = from ? `${langObj.card_from}: ${from.toUpperCase()}` : ""; 
+            
+            // 直接复制预览区已经处理好的带引号/换行的文本 
+            document.getElementById('hd-cardWish').innerText = document.getElementById('cardTextDisplay').innerText; 
+            
+            const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '.'); 
+            document.getElementById('hd-cardDate').innerText = `${langObj.card_minted}: ${dateStr}`; 
+            document.getElementById('hd-cardId').innerText = document.getElementById('cardId').innerText; 
+            
+            // 3. 生成高清二维码 
+            const qrOpts = { 
+                text: url, 
+                colorDark : "#D4AF37", 
+                colorLight : "#000000", 
+                correctLevel : QRCode.CorrectLevel.H 
+            }; 
+            document.getElementById('hd-qrcode').innerHTML = ""; 
+            
+            // 修改：宽度设为 70 (配合容器的 86px - 16px padding)，保证四周有 8px 的纯黑静区 
+            new QRCode(document.getElementById('hd-qrcode'), { ...qrOpts, width: 70, height: 70 }); 
         }
+
+        function drawPolygon(ctx, x, y, radius, sides, rotation) {
+            ctx.beginPath();
+            for (let i = 0; i < sides; i++) {
+                const angle = (i * 2 * Math.PI / sides) - (Math.PI / 2) + rotation;
+                const px = x + radius * Math.cos(angle);
+                const py = y + radius * Math.sin(angle);
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.stroke();
+        }
+
+        function drawThemeEffect(canvas, type) {
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            if (!w || !h) return;
+            ctx.clearRect(0, 0, w, h);
+
+            if (type === 'stars') {
+                const bgGradient = ctx.createLinearGradient(0, 0, w, h);
+                bgGradient.addColorStop(0, '#020205'); bgGradient.addColorStop(1, '#08080c');
+                ctx.fillStyle = bgGradient; ctx.fillRect(0,0,w,h);
+                const starCount = 300; 
+                for (let i = 0; i < starCount; i++) {
+                    const axis = Math.random();
+                    let spread = (Math.random() - 0.5) * 2; 
+                    spread = spread * spread * spread * (w * 0.35); 
+                    const cx = axis * w; const cy = h - (axis * h);
+                    const x = cx + spread; const y = cy + spread;
+                    if(x < 0 || x > w || y < 0 || y > h) continue;
+                    const size = Math.random() * 1.5 + 0.1; const alpha = Math.random() * 0.8 + 0.1;
+                    ctx.beginPath(); ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fillStyle = (Math.abs(spread) < w * 0.1 && Math.random() > 0.5) ? `rgba(255, 220, 150, ${alpha})` : `rgba(255, 255, 255, ${alpha})`;
+                    ctx.fill();
+                }
+
+            } else if (type === 'love') {
+                ctx.fillStyle = '#150205'; ctx.fillRect(0,0,w,h);
+                ctx.globalCompositeOperation = 'lighter'; 
+                const layers = 6;
+                for (let i = 0; i < layers; i++) {
+                    ctx.beginPath();
+                    const startY = h * 0.6 - (i * h * 0.05);
+                    const cp1x = w * 0.3; const cp1y = startY - Math.random() * 150;
+                    const cp2x = w * 0.7; const cp2y = startY + Math.random() * 150;
+                    const endY = startY + Math.random() * 50;
+                    ctx.moveTo(0, startY); ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, w, endY);
+                    ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+                    const gradient = ctx.createLinearGradient(0, 0, w, h);
+                    gradient.addColorStop(0, `hsla(${330 + i*10}, 80%, 20%, 0.05)`); 
+                    gradient.addColorStop(0.5, `hsla(${350 + i*5}, 90%, 45%, 0.2)`); 
+                    gradient.addColorStop(1, `hsla(${330}, 80%, 15%, 0.05)`);
+                    ctx.fillStyle = gradient; ctx.fill();
+                }
+                ctx.globalCompositeOperation = 'source-over';
+                const bottomFade = ctx.createLinearGradient(0, h * 0.6, 0, h);
+                bottomFade.addColorStop(0, 'rgba(0, 0, 0, 0)'); bottomFade.addColorStop(0.7, 'rgba(5, 5, 5, 0.8)'); bottomFade.addColorStop(1, '#000000'); 
+                ctx.fillStyle = bottomFade; ctx.fillRect(0, h*0.6, w, h*0.4);
+
+            } else if (type === 'firework') {
+                 ctx.fillStyle = '#020205'; ctx.fillRect(0,0,w,h);
+                 ctx.globalCompositeOperation = 'lighter';
+                 const fireworks = [{ x: w * 0.65, y: h * 0.28, baseHue: 40,  scale: 1.2 }, { x: w * 0.25, y: h * 0.45, baseHue: 190, scale: 0.9 }, { x: w * 0.75, y: h * 0.65, baseHue: 320, scale: 0.8 }];
+                 fireworks.forEach(fw => {
+                     const particleCount = 200; const maxRadius = w * 0.28 * fw.scale;
+                     for (let i = 0; i < particleCount; i++) {
+                         const angle = Math.random() * Math.PI * 2;
+                         const speedFactor = Math.pow(Math.random(), 0.5); 
+                         const currentRadius = maxRadius * speedFactor;
+                         const gravityFactor = (Math.sin(angle) + 1) * 0.5;
+                         let gravityDrop = 0;
+                         if (maxRadius > 0) gravityDrop = (currentRadius / maxRadius) * (maxRadius * 0.35) * gravityFactor;
+                         const endX = fw.x + Math.cos(angle) * currentRadius;
+                         const endY = fw.y + Math.sin(angle) * currentRadius + gravityDrop;
+                         const trailLen = currentRadius * 0.15; 
+                         const prevRadius = currentRadius - trailLen;
+                         const prevGravity = gravityDrop * 0.8;
+                         const startX = fw.x + Math.cos(angle) * prevRadius;
+                         const startY = fw.y + Math.sin(angle) * prevRadius + prevGravity;
+                         let hue = fw.baseHue + (Math.random() - 0.5) * 60; 
+                         if (Math.random() > 0.7) hue = Math.random() * 360; 
+                         const fade = 1 - (currentRadius/maxRadius);
+                         const opacity = 0.5 + fade * 0.5;
+                         ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(endX, endY);
+                         ctx.lineWidth = Math.random() * 2 + 0.5; ctx.lineCap = 'round';
+                         const gradient = ctx.createLinearGradient(startX, startY, endX, endY);
+                         gradient.addColorStop(0, `hsla(${hue}, 100%, 50%, 0)`); gradient.addColorStop(1, `hsla(${hue}, 100%, 70%, ${opacity})`); 
+                         ctx.strokeStyle = gradient; ctx.stroke();
+                         ctx.beginPath(); ctx.arc(endX, endY, Math.random() * 1.5, 0, Math.PI*2);
+                         ctx.fillStyle = `hsla(${hue}, 100%, 90%, 1)`; ctx.fill();
+                     }
+                 });
+                 ctx.globalCompositeOperation = 'source-over';
+
+            } else if (type === 'portal') {
+                ctx.fillStyle = '#050100'; ctx.fillRect(0,0,w,h);
+                const cx = w / 2; const cy = h / 2; const maxR = w * 0.4;
+                ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+                
+                ctx.shadowBlur = 50; ctx.shadowColor = "#FF4500"; ctx.strokeStyle = "rgba(255, 140, 0, 0.4)"; ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.arc(cx, cy, maxR, 0, Math.PI*2); ctx.stroke();
+                ctx.shadowBlur = 15; ctx.shadowColor = "#FF8C00"; ctx.strokeStyle = "#FFD700"; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.arc(cx, cy, maxR, 0, Math.PI*2); ctx.stroke();
+                drawPolygon(ctx, cx, cy, maxR * 0.85, 6, Math.PI/6);
+                drawPolygon(ctx, cx, cy, maxR * 0.7, 5, -Math.PI/10);
+                drawPolygon(ctx, cx, cy, maxR * 0.55, 4, Math.PI/4);
+                drawPolygon(ctx, cx, cy, maxR * 0.4, 3, Math.PI/2);
+                ctx.beginPath(); ctx.arc(cx, cy, maxR * 0.2, 0, Math.PI*2); ctx.stroke();
+                ctx.fillStyle = "#FFD700"; ctx.shadowBlur = 30; ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI*2); ctx.fill();
+                ctx.globalCompositeOperation = 'source-over';
+            }
+        }
+
+        async function downloadImage() { 
+            const hdCard = document.getElementById('hd-render-card'); 
+            const btn = document.querySelector('.save-btn'); 
+            const originalText = btn.innerText; 
+            
+            // 临时显示加载状态 
+            btn.innerText = "PROCESSING..."; 
+            btn.disabled = true; 
+
+            await document.fonts.ready; 
+            await new Promise(r => setTimeout(r, 500)); // 等待字体渲染 
+            
+            try { 
+                // scale: 3 表示生成 3 倍分辨率的图片 (400px * 3 = 1200px 宽) 
+                // 这样既保证了排版协调，又保证了保存下来的图片足够大、足够清晰 
+                const canvas = await html2canvas(hdCard, { 
+                    scale: 3, 
+                    backgroundColor: "#000", 
+                    useCORS: true 
+                }); 
+                
+                const link = document.createElement('a'); 
+                link.download = `CyberCard_2026_${selectedType}.png`; 
+                link.href = canvas.toDataURL("image/png"); 
+                link.click(); 
+            } catch (err) { 
+                console.error(err); 
+                alert("Download Error"); 
+            } finally { 
+                btn.innerText = originalText; 
+                btn.disabled = false; 
+            } 
+        }
+        
+        window.addEventListener('resize', () => {
+             if(document.getElementById('previewColumn').classList.contains('active')) {
+                 updateRealTimeUI();
+             }
+        });
     </script>
 </body>
 </html>

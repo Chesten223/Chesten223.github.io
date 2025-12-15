@@ -229,42 +229,87 @@
             window.location.href = BUY_LINK;
         }
 
-        async function fetchDecryptedPayload() {
-            const params = new URLSearchParams(window.location.search);
-            const code = params.get('code');
+        async function fetchDecryptedPayload() { 
+            const params = new URLSearchParams(window.location.search); 
+            const code = params.get('code'); 
+            // 获取启动按钮元素，用于修改文案 
+            const overlayBtn = document.getElementById('overlay'); 
             
-            if (code) {
-                try {
-                    const response = await fetch(API_DECODE_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ code: code })
-                    });
+            if (code) { 
+                try { 
+                    const response = await fetch(API_DECODE_URL, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ code: code }) 
+                    }); 
                     
-                    const result = await response.json();
+                    const result = await response.json(); 
                     
-                    if (result.success && result.data) {
-                        const payload = result.data;
-                        console.log("Verified Gift:", payload);
+                    if (result.success && result.data) { 
+                        const payload = result.data; 
+                        console.log("Verified Gift:", payload); 
                         
-                        if (payload.wish) { 
+                        // 只要有 wish, to, from 任意一个，就视为定制版 
+                        if (payload.wish || payload.to || payload.from) { 
                             isPaidUser = true; 
                             
-                            let customText = "";
-                            if(payload.wish) customText += payload.wish.replace(/\n/g, "  ") + " ";
-                            // customText += " 2026 ";
-                            
-                            if(customText.length < 20) customText = customText.repeat(3);
-                            else customText = customText.repeat(2);
+                            // === 1. 获取并处理称呼 (去除首尾空格) === 
+                            const toUser = payload.to ? payload.to.trim() : ""; 
+                            const fromUser = payload.from ? payload.from.trim() : ""; 
 
-                            runeText = customText;
+                            // === 2. 针对"传送门"场景的定制文案逻辑 === 
+                            if (toUser && fromUser) { 
+                                // 双人场景：强调"铭刻"与"契约" 
+                                overlayBtn.innerText = `${fromUser} 为 ${toUser} 铭刻的时光法阵`; 
+                                // 名字太长时，缩小字间距和字号，防止换行 
+                                overlayBtn.style.letterSpacing = '2px'; 
+                                overlayBtn.style.fontSize = '14px'; 
+                                overlayBtn.style.padding = '20px 30px'; 
+                            } else if (toUser) { 
+                                // 仅接收者：强调"亲手解封" 
+                                overlayBtn.innerText = `${toUser}，请亲手解开这道封印`; 
+                                overlayBtn.style.letterSpacing = '2px'; 
+                                overlayBtn.style.fontSize = '14px'; 
+                                overlayBtn.style.padding = '20px 30px'; 
+                            } else if (fromUser) { 
+                                // 仅发送者：强调"秘钥" 
+                                overlayBtn.innerText = `来自 ${fromUser} 的时空秘钥`; 
+                                overlayBtn.style.letterSpacing = '4px'; 
+                                overlayBtn.style.fontSize = '15px'; 
+                            } else { 
+                                // 无名：通用高逼格文案 
+                                overlayBtn.innerText = "感应手势，开启秘境"; 
+                                overlayBtn.style.letterSpacing = '8px'; 
+                            } 
+
+                            // === 3. 生成法阵旋转文字 (Rune Text) === 
+                            // 格式： [TO xxx] 祝福语 [FROM xxx] 
+                            let customText = ""; 
+                            
+                            // if (toUser) customText += `TO ${toUser}  `; 
+                            // 祝福语中的换行符替换为空格 
+                            if (payload.wish) customText += payload.wish.replace(/\n/g, "  ") + "  "; 
+                            // if (fromUser) customText += `FROM ${fromUser}  `; 
+                            
+                            // 如果都没填，用默认兜底 
+                            if (!customText.trim()) customText = "万事如意 五福临门 妖邪退散 岁岁平安"; 
+
+                            // 补全长度逻辑：为了保证法阵圆环闭合美观 
+                            // 如果文字太短，重复3次；中等长度重复2次 
+                            if(customText.length < 20) customText = customText.repeat(3); 
+                            else if(customText.length < 40) customText = customText.repeat(2); 
+
+                            // 赋值给全局变量 runeText，供 createRuneTexture 使用 
+                            runeText = customText; 
+
+                            // 刷新 UI 状态 (隐藏水印等) 
                             initUI(); 
-                        }
-                    }
-                } catch (e) {
-                    console.error("API Error:", e);
-                }
-            }
+                        } 
+                    } 
+                } catch (e) { 
+                    console.error("API Error:", e); 
+                } 
+            } 
         }
 
         function initUI() {

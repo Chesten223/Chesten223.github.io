@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026 专属手势祝福</title>
+    <title>只有比心才能看到的话</title>
     
     <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
     
@@ -54,20 +54,56 @@
         #three-canvas { display: block; width: 100%; height: 100%; }
         
         /* 调试窗口 (PC端保留，手机端隐藏) */
-        #video-container {
-            position: absolute;
-            bottom: 20px; left: 20px;
-            width: 140px; height: 186px; 
-            border: 2px solid rgba(255, 105, 180, 0.5);
-            border-radius: 8px;
-            overflow: hidden;
-            z-index: 10;
+        /* === 修改：相机窗口改为 4:3 标准比例，并支持折叠 === */ 
+        #video-container { 
+            position: absolute; 
+            bottom: 20px; left: 20px; 
+            width: 240px; height: 180px; /* 改为 4:3 横屏比例 */ 
+            border: 2px solid rgba(255, 105, 180, 0.5); 
+            border-radius: 8px; 
+            overflow: hidden; 
+            z-index: 10; 
             opacity: 0; 
-            transform: scaleX(-1);
-            pointer-events: none;
-            transition: opacity 1s;
-            background: #000;
+            transform: scaleX(-1); /* 镜像翻转 */ 
+            pointer-events: none; /* 让鼠标能穿透容器 */ 
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
+            background: #000; 
             display: none; 
+        } 
+
+        /* 折叠状态 */ 
+        #video-container.collapsed { 
+            width: 32px; height: 32px; 
+            border-radius: 50%; 
+            border-color: rgba(255, 255, 255, 0.3); 
+        } 
+        /* 折叠时隐藏视频内容 */ 
+        #video-container.collapsed video, 
+        #video-container.collapsed canvas { 
+            opacity: 0; 
+            pointer-events: none; 
+        } 
+
+        /* 切换按钮 (必须设置 pointer-events: auto 因为父容器是 none) */ 
+        #video-toggle { 
+            position: absolute; 
+            top: 0; right: 0; 
+            width: 30px; height: 30px; 
+            background: rgba(0, 0, 0, 0.6); 
+            color: #fff; 
+            font-size: 18px; 
+            line-height: 30px; 
+            text-align: center; 
+            cursor: pointer; 
+            z-index: 20; 
+            pointer-events: auto; /* 关键：允许点击 */ 
+            border-bottom-left-radius: 8px; 
+            transition: background 0.2s; 
+            /* 反向抵消父容器的镜像，确保文字不反 */ 
+            transform: scaleX(-1); 
+        } 
+        #video-toggle:hover { 
+            background: rgba(255, 50, 100, 0.8); 
         }
         
         #input_video, #debug_canvas { 
@@ -303,6 +339,7 @@
     <div id="video-container">
         <video id="input_video" playsinline webkit-playsinline></video>
         <canvas id="debug_canvas"></canvas>
+        <div id="video-toggle" onclick="toggleVideo()">−</div>
     </div>
 
     <div id="watermark" onclick="goBuy()">七叶怀瑾</div>
@@ -336,16 +373,16 @@
         heartColorB: 0xff99cc,      
 
         // 【修改1】大幅增强手机端辉光，让它发光！
-        bloomStrength: isMobile ? 2.5 : 1.4,        
+        bloomStrength: isMobile ? 2.5 : 1.3,        
         bloomRadius: isMobile ? 0.6 : 0.4,          
         
         handParticleCount: isMobile ? 1200 : 1500,   
-        handParticleSize: isMobile ? 4.5 : 2.5,  // 粒子更大 
+        handParticleSize: isMobile ? 4.5 : 2.0,  // 粒子更大 
 
         connectThreshold: 4.0,    
         
         // 【修改】：5秒进度条。满速充能(speed=2)时，600/2 = 300帧 = 5秒 
-        gestureHoldTime: 600, 
+        gestureHoldTime: 300, 
         
         morphParticleCount: isMobile ? 15000 : 25000, 
         textPhrases: ["I LOVE U", "FOREVER"], 
@@ -549,28 +586,92 @@
         }
     }
 
-    async function fetchDecryptedPayload() {
-        const params = new URLSearchParams(window.location.search);
-        const code = params.get('code');
-        if (code) {
-            try {
-                const response = await fetch(API_DECODE_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: code })
-                });
-                const result = await response.json();
-                if (result.success && result.data && result.data.wish) {
-                    isPaidUser = true; 
-                    const lines = result.data.wish.split('\n').filter(line => line.trim() !== '');
-                    CONFIG.textPhrases = lines;
-                    initUI(); 
-                }
-            } catch (e) { console.error("API Error", e); }
-        }
+    async function fetchDecryptedPayload() { 
+        const params = new URLSearchParams(window.location.search); 
+        const code = params.get('code'); 
+        const overlayBtn = document.getElementById('overlay'); 
+         
+        if (code) { 
+            try { 
+                const response = await fetch(API_DECODE_URL, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ code: code }) 
+                }); 
+                 
+                const result = await response.json(); 
+                 
+                if (result.success && result.data) { 
+                    const payload = result.data; 
+                    
+                    // 只要有内容，就视为定制版 
+                    if (payload.wish || payload.to || payload.from) { 
+                        isPaidUser = true; 
+                         
+                        // 1. 处理祝福语 (将多行文本拆分为粒子变换的数组) 
+                        if (payload.wish) { 
+                            // 按换行符拆分，过滤空行 
+                            const lines = payload.wish.split('\n').filter(line => line.trim() !== ''); 
+                            // 覆盖默认的 ["I LOVE U", "FOREVER"] 
+                            CONFIG.textPhrases = lines; 
+                        } 
+ 
+                        // 2. 获取称呼 
+                        const toUser = payload.to ? payload.to.trim() : ""; 
+                        const fromUser = payload.from ? payload.from.trim() : ""; 
+ 
+                        // 3. 根据情景定制按钮文案 (浪漫/赛博风) 
+                        if (toUser && fromUser) { 
+                            // 双人：强调"专属频段"或"发送" 
+                            overlayBtn.innerText = `⚡ ${fromUser} 发送给 ${toUser} 的心动频段`; 
+                            // 名字太长时缩小字号 
+                            overlayBtn.style.letterSpacing = '1px'; 
+                            overlayBtn.style.fontSize = '14px'; 
+                            overlayBtn.style.padding = '20px 25px'; 
+                        } else if (toUser) { 
+                            // 仅接收者：强调"接收" 
+                            overlayBtn.innerText = `💌 ${toUser}，请接收这份专属频率`; 
+                            overlayBtn.style.letterSpacing = '1px'; 
+                            overlayBtn.style.fontSize = '15px'; 
+                        } else if (fromUser) { 
+                            // 仅发送者：强调"跨越时空" 
+                            overlayBtn.innerText = `📡 来自 ${fromUser} 的跨时空信号`; 
+                            overlayBtn.style.letterSpacing = '2px'; 
+                            overlayBtn.style.fontSize = '15px'; 
+                        } else { 
+                            // 默认：强调"交互动作" 
+                            overlayBtn.innerText = "💖 双手比心，连接专属频道"; 
+                            overlayBtn.style.letterSpacing = '4px'; 
+                        } 
+ 
+                        // 刷新 UI (隐藏水印等) 
+                        initUI(); 
+                    } 
+                } 
+            } catch (e) { 
+                console.error("API Error", e); 
+            } 
+        } 
+        // 无论成功失败，最后都执行一次 UI 初始化确保状态正确 
         initUI(); 
     }
     
+    // === 视频窗口折叠/展开功能 === 
+    function toggleVideo() { 
+        const container = document.getElementById('video-container'); 
+        const toggleBtn = document.getElementById('video-toggle'); 
+        
+        if (container.classList.contains('collapsed')) { 
+            // 展开 
+            container.classList.remove('collapsed'); 
+            toggleBtn.innerText = '−'; 
+        } else { 
+            // 折叠 
+            container.classList.add('collapsed'); 
+            toggleBtn.innerText = '+'; 
+        } 
+    } 
+
     function initUI() {
         if (isPaidUser) {
             const wm = document.getElementById('watermark');
@@ -642,12 +743,16 @@
             debugCtx.save();
             debugCtx.clearRect(0, 0, debugCanvas.width, debugCanvas.height);
             debugCtx.drawImage(results.image, 0, 0, debugCanvas.width, debugCanvas.height);
-            if (results.multiHandLandmarks) {
-                for (const landmarks of results.multiHandLandmarks) {
-                    drawConnectors(debugCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 2}); 
-                    drawLandmarks(debugCtx, landmarks, {color: '#FF0000', lineWidth: 1, radius: 2}); 
-                }
-            }
+            
+            // === 【修改】注释掉下面这段绘制骨骼的代码 === 
+            // if (results.multiHandLandmarks) {
+            //     for (const landmarks of results.multiHandLandmarks) {
+            //         drawConnectors(debugCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 2}); 
+            //         drawLandmarks(debugCtx, landmarks, {color: '#FF0000', lineWidth: 1, radius: 2}); 
+            //     }
+            // }
+            // ========================================== 
+            
             debugCtx.restore();
         });
         const cameraUtils = new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 640, height: 480, facingMode: 'user'});
@@ -795,7 +900,7 @@
                 const ratio = Math.random();
                 const c = cA.clone().lerp(cB, ratio);
                 // 增强颜色亮度
-                c.multiplyScalar(1.5);
+                c.multiplyScalar(1.4);
                 cols[i*3] = c.r; cols[i*3+1] = c.g; cols[i*3+2] = c.b;
                 sizes[i] = Math.random() * 1.5 + 0.5;
             }
@@ -846,14 +951,14 @@
                 ctx.fillStyle = '#000'; ctx.fillRect(0,0,w,h);
                 ctx.fillStyle = '#fff';
                 
-                const baseFontSize = isMobile ? 70 : 50; // 字号放大
+                const baseFontSize = isMobile ? 70 : 50;
                 ctx.font = `bold ${baseFontSize}px Arial`;
-                ctx.textAlign = 'center'; 
+                ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
 
-                const maxWidth = w * 0.9; 
+                const maxWidth = w * 0.9;
                 const lineHeight = baseFontSize * 1.2;
-                const words = phrase.split(''); 
+                const words = phrase.split('');
                 let lines = [];
                 let currentLine = words[0];
 
@@ -888,9 +993,12 @@
                 const textTarget = new Float32Array(this.count * 3);
                 for(let i=0; i<this.count; i++) {
                     const p = validPixels[i % validPixels.length] || {x:w/2, y:h/2};
-                    textTarget[i*3] = (p.x / w - 0.5) * 90; // 范围放大
+                    textTarget[i*3] = (p.x / w - 0.5) * 90;
                     textTarget[i*3+1] = -(p.y / h - 0.5) * 50;
-                    textTarget[i*3+2] = (Math.random()-0.5) * 5; 
+                    
+                    // 【核心修改】将 Z 轴厚度从 5 降低到 0.1 
+                    // 这样粒子几乎在同一平面，消除了透视带来的大小不一，让字迹更清晰锐利 
+                    textTarget[i*3+2] = (Math.random()-0.5) * 1;
                 }
                 this.targets.texts.push(textTarget);
             });

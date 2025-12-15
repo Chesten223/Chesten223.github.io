@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026 专属祝福</title>
+    <title>星空的祝福</title>
     
     <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
@@ -34,6 +34,7 @@
             z-index: 10;
             text-align: center;
             transition: opacity 0.8s ease;
+            width: 100%;
         }
 
         /* 启动按钮 */
@@ -55,6 +56,8 @@
             white-space: nowrap;
             position: relative;
             overflow: hidden;
+            max-width: 90vw; /* 防止手机上撑破屏幕 */
+            text-overflow: ellipsis;
         }
 
         #overlay:hover {
@@ -179,7 +182,7 @@
 </div>
 
 <script>
-    // === V34.0 后端解密版 (适配 Python Server) ===
+    // === V35.0 后端解密 + 智能称呼版 ===
     
     // 配置跳转链接
     const BUY_LINK = "../#buy"; 
@@ -239,6 +242,7 @@
     async function fetchDecryptedPayload() {
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
+        const overlayBtn = document.getElementById('overlay');
         
         if (code) {
             try {
@@ -259,27 +263,44 @@
                     if (payload.wish) { 
                         isPaidUser = true; // 标记为付费用户 
                         
-                        // 1. 构建基础播放列表 (倒计时) 
+                        // === 1. 智能更新进入按钮文字 ===
+                        const toUser = payload.to ? payload.to.trim() : "";
+                        const fromUser = payload.from ? payload.from.trim() : "";
+
+                        if (toUser && fromUser) {
+                            overlayBtn.innerText = `这是 ${fromUser} 送给 ${toUser} 的星空`;
+                            // 名字太长时缩小字间距和字号
+                            overlayBtn.style.letterSpacing = '1px';
+                            overlayBtn.style.fontSize = '14px';
+                            overlayBtn.style.padding = '20px 30px'; 
+                        } else if (toUser) {
+                            overlayBtn.innerText = `${toUser}，这是一片属于你的星空`;
+                            overlayBtn.style.letterSpacing = '1px';
+                            overlayBtn.style.fontSize = '14px';
+                            overlayBtn.style.padding = '20px 30px';
+                        } else if (fromUser) {
+                            overlayBtn.innerText = `来自 ${fromUser} 的星空祝福`;
+                            overlayBtn.style.letterSpacing = '3px';
+                            overlayBtn.style.fontSize = '15px';
+                        } else {
+                            overlayBtn.innerText = "见证星空祝福";
+                            overlayBtn.style.letterSpacing = '6px';
+                        }
+
+                        // === 2. 构建基础播放列表 (倒计时) ===
                         let newTextList = ["3", "2", "1"]; 
                         
-                        // 3. 插入 2026 (固定年份) 
-                        // newTextList.push("2026"); 
-                        
-                        // 4. 【核心修改】处理多行祝福语 
+                        // === 3. 处理多行祝福语 ===
                         if(payload.wish) { 
-                            // 按回车符 (\n) 分割，并过滤掉空行 
                             const lines = payload.wish.split('\n').filter(line => line.trim() !== ''); 
-                            // 把分割后的每一句都加到播放列表里 
                             newTextList.push(...lines); 
                         } 
                         
                         config.textList = newTextList; 
                         
-                        // 5. 重新计算每句话的播放时长 
+                        // === 4. 重新计算每句话的播放时长 ===
                         config.textDuration = newTextList.map(text => { 
-                            // 如果是纯数字且很短(倒计时)，播放 1.5秒 
                             if (/^\d+$/.test(text) && text.length < 3) return 1500; 
-                            // 其他文字播放 3.5秒 
                             return 3500; 
                         }); 
 
@@ -289,7 +310,7 @@
                 }
             } catch (e) {
                 console.error("API Error:", e);
-                // 如果出错（比如断网），维持免费版配置
+                // 出错时保持默认文本
             }
         }
     }
@@ -300,17 +321,17 @@
     // === UI 初始化逻辑 ===
     function initUI() {
         if (isPaidUser) {
-            // 付费版：移除水印，移除结尾广告，移除启动页的“Powered By”
+            // 付费版：移除水印，移除启动页的“Powered By”
             const wm = document.getElementById('watermark');
             if(wm) wm.style.display = 'none';
             
-            // const endAd = document.getElementById('end-ad');
-            // if(endAd) endAd.style.display = 'none';
+            const subtext = document.getElementById('start-subtext');
+            if(subtext) subtext.style.display = 'none'; 
 
-            // const subtext = document.getElementById('start-subtext');
-            // if(subtext) subtext.style.display = 'none'; // 甚至可以连启动页下方的版权也隐藏，看你需求
+            // 付费版依然保留结尾小广告(引导接收者也去购买)，如果不想要可以注释掉下面这行
             const endAd = document.getElementById('end-ad');
             if(endAd) endAd.style.display = 'block';
+            
             console.log("UI Cleaned for VIP");
         } else {
             // 免费版：显示水印，准备结尾广告
@@ -599,7 +620,7 @@
         tempCtx.textAlign = 'center';
         tempCtx.textBaseline = 'middle';
 
-        // --- 自动换行逻辑开始 ---
+        // --- 自动换行逻辑 ---
         const maxWidth = width * 0.85;
         const lineHeight = fontSize * 1.2;
         const words = text.split('');
@@ -622,11 +643,9 @@
         const totalHeight = lines.length * lineHeight;
         const startY = (height - totalHeight) / 2 + (lineHeight / 2);
 
-        // 绘制多行文字
         lines.forEach((line, i) => {
             tempCtx.fillText(line, width / 2, startY + i * lineHeight);
         });
-        // --- 自动换行逻辑结束 ---
         
         const imageData = tempCtx.getImageData(0, 0, width, height);
         const data = imageData.data;
@@ -645,10 +664,9 @@
 
     function switchText(index) {
         if (index >= config.textList.length) {
-            currentTextIndex = 3; 
+            currentTextIndex = 3; // 回到 2026 之后的祝福语
             index = 3;
             
-            // 免费版：广告显示逻辑
             if (!hasShownAd) {
                 const ad = document.getElementById('end-ad');
                 if(ad) {
@@ -716,7 +734,6 @@
     
     // 点击开始按钮逻辑
     overlay.addEventListener('click', () => {
-        // 淡出整个启动容器
         startContainer.style.opacity = '0';
         setTimeout(() => startContainer.style.display = 'none', 800);
         

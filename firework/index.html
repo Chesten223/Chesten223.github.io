@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026 专属烟花祝福</title>
+    <title>烟花的话</title>
     
     <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
     <style>
@@ -235,43 +235,68 @@
     }
 
     // === 1. 获取解密数据 ===
-    async function fetchDecryptedPayload() {
-        const params = new URLSearchParams(window.location.search);
-        const code = params.get('code');
-        
-        if (code) {
-            try {
-                const response = await fetch(API_DECODE_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: code })
-                });
-                const result = await response.json();
-                
-                if (result.success && result.data) {
-                    const payload = result.data;
-                    console.log("Verified Gift:", payload);
+    async function fetchDecryptedPayload() { 
+        const params = new URLSearchParams(window.location.search); 
+        const code = params.get('code'); 
+        const overlayBtn = document.getElementById('overlay'); 
+         
+        if (code) { 
+            try { 
+                const response = await fetch(API_DECODE_URL, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ code: code }) 
+                }); 
+                const result = await response.json(); 
+                 
+                if (result.success && result.data) { 
+                    const payload = result.data; 
+                    console.log("Verified Gift:", payload); 
                     
-                    if (payload.wish) { 
+                    if (payload.wish || payload.to || payload.from) { 
                         isPaidUser = true; 
-                        
-                        // 【修改点】付费版也不再加倒计时，直接放内容
+                         
+                        // 1. 获取称呼 
+                        const toUser = payload.to ? payload.to.trim() : ""; 
+                        const fromUser = payload.from ? payload.from.trim() : ""; 
+  
+                        // 2. 定制按钮文案 (仅修改界面显示，不影响烟花内容) 
+                        if (toUser && fromUser) { 
+                            overlayBtn.innerText = `看，这是 ${fromUser} 为 ${toUser} 燃放的烟花`; 
+                            overlayBtn.style.letterSpacing = '1px'; 
+                            overlayBtn.style.fontSize = '14px'; 
+                            overlayBtn.style.padding = '20px 30px'; 
+                        } else if (toUser) { 
+                            overlayBtn.innerText = `${toUser}，这是为你绽放的烟花`; 
+                            overlayBtn.style.letterSpacing = '1px'; 
+                            overlayBtn.style.fontSize = '14px'; 
+                            overlayBtn.style.padding = '20px 30px'; 
+                        } else if (fromUser) { 
+                            overlayBtn.innerText = `来自 ${fromUser} 的绚烂烟火`; 
+                            overlayBtn.style.letterSpacing = '2px'; 
+                        } else { 
+                            overlayBtn.innerText = "点燃 2026 绚烂烟火"; 
+                            overlayBtn.style.letterSpacing = '4px'; 
+                        } 
+  
+                        // 3. 构建烟花文字播放序列 (只放祝福语，不放名字) 
                         let newTextList = []; 
-                        
-                        if(payload.wish) { 
+  
+                        if (payload.wish) { 
                             const lines = payload.wish.split('\n').filter(line => line.trim() !== ''); 
                             newTextList.push(...lines); 
                         } 
-                        
-                        // 如果因为某种原因列表空了，给个保底
-                        if(newTextList.length === 0) newTextList.push("2026 新年快乐");
-
+  
+                        // 保底逻辑 
+                        if (newTextList.length === 0) newTextList.push("2026 新年快乐"); 
+  
                         config.textList = newTextList; 
+                         
                         initUI(); 
-                    }
-                }
-            } catch (e) { console.error("API Error:", e); }
-        }
+                    } 
+                } 
+            } catch (e) { console.error("API Error:", e); } 
+        } 
     }
     fetchDecryptedPayload();
 
@@ -620,29 +645,33 @@
             }
         }
 
-        // 切换文字逻辑
-        if (isTextFull && !isSwitchingText) {
-            isSwitchingText = true;
-            // 默认停留 3秒
-            setTimeout(() => {
-                currentTextIndex++;
-                if (currentTextIndex >= config.textList.length) {
-                    currentTextIndex = config.textList.length - 1; 
+        // 切换文字逻辑 
+        if (isTextFull && !isSwitchingText) { 
+            isSwitchingText = true; 
+            // 默认停留 3秒 
+            setTimeout(() => { 
+                currentTextIndex++; 
+                
+                // === 无限循环逻辑 === 
+                if (currentTextIndex >= config.textList.length) { 
+                    currentTextIndex = 0; // 归零，从头开始 
                     
-                    // 显示底部广告
-                    if (!hasShownAd && !isPaidUser) {
-                        const ad = document.getElementById('end-ad');
-                        if(ad) {
+                    // (可选) 播放完一轮后显示底部广告，不打断循环 
+                    if (!hasShownAd && !isPaidUser) { 
+                        const ad = document.getElementById('end-ad'); 
+                        if(ad) { 
                             ad.style.display = 'block'; 
                             setTimeout(() => ad.classList.add('visible'), 100); 
-                        }
-                        hasShownAd = true;
-                    }
-                } else {
-                    initTextGrid(config.textList[currentTextIndex]);
-                    isSwitchingText = false;
-                }
-            }, 3000);
+                        } 
+                        hasShownAd = true; 
+                    } 
+                } 
+                
+                // 初始化下一句文字 
+                initTextGrid(config.textList[currentTextIndex]); 
+                isSwitchingText = false; 
+                
+            }, 3000); 
         }
     }
 
