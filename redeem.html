@@ -817,7 +817,8 @@
                 text: url,
                 colorDark: "#D4AF37",
                 colorLight: "#000000",
-                correctLevel: QRCode.CorrectLevel.H
+                // 修改部分：将 H (High 30%) 改为 L (Low 7%)，二维码点阵瞬间变少，非常容易扫 
+                correctLevel: QRCode.CorrectLevel.L
             };
             document.getElementById('qrcode').innerHTML = "";
             // 修改部分：width 改为 128 (原来是80)，预览时就更清晰 
@@ -855,7 +856,8 @@
                 text: url, 
                 colorDark : "#D4AF37", 
                 colorLight : "#000000", 
-                correctLevel : QRCode.CorrectLevel.H 
+                // 修改部分：将 H 改为 L，大幅降低复杂度 
+                correctLevel : QRCode.CorrectLevel.L 
             }; 
             document.getElementById('hd-qrcode').innerHTML = ""; 
             
