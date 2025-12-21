@@ -54,61 +54,80 @@
         #three-canvas { display: block; width: 100%; height: 100%; }
         
         /* 调试窗口 (PC端保留，手机端隐藏) */
-        /* === 修改：相机窗口改为 4:3 标准比例，并支持折叠 === */ 
-        #video-container { 
-            position: absolute; 
-            bottom: 20px; left: 20px; 
-            width: 240px; height: 180px; /* 改为 4:3 横屏比例 */ 
-            border: 2px solid rgba(255, 105, 180, 0.5); 
-            border-radius: 8px; 
-            overflow: hidden; 
-            z-index: 10; 
-            opacity: 0; 
-            transform: scaleX(-1); /* 镜像翻转 */ 
-            pointer-events: none; /* 让鼠标能穿透容器 */ 
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
-            background: #000; 
-            display: none; 
+        /* === 修复：容器不再翻转，只翻转视频，这样按钮逻辑更正常 === */ 
+        #video-container {  
+            position: absolute;  
+            bottom: 20px; left: 20px;  
+            width: 320px; height: 240px; /* 锁定 4:3 比例，配合 object-fit: cover */ 
+            border: 2px solid rgba(255, 105, 180, 0.6);  
+            border-radius: 16px; /* 圆角稍微大一点，更现代 */ 
+            overflow: hidden;  
+            z-index: 100; /* 层级极高，防止被遮挡 */ 
+            opacity: 0; /* 初始隐藏，等JS检测到画面再显示 */ 
+            transform: none; /* 【关键】取消容器翻转 */ 
+            pointer-events: none;  
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);  
+            background: #000;  
+            display: none;  
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }  
+
+
+        /* 折叠状态 */  
+        #video-container.collapsed {  
+            width: 50px; height: 50px; /* 按钮加大，更好按 */ 
+            border-radius: 50%;  
+            border-color: rgba(255, 255, 255, 0.5);  
+            background: rgba(0,0,0,0.8);
+            box-shadow: none;
+        }  
+         
+
+        #video-container.collapsed video,  
+        #video-container.collapsed canvas {  
+            opacity: 0;  
+            pointer-events: none;  
+        }  
+
+
+        /* 切换按钮：加大触控区，取消翻转 */  
+        #video-toggle {  
+            position: absolute;  
+            top: 0; right: 0;  
+            width: 50px; height: 50px; /* 加大点击范围 */ 
+            background: rgba(255, 20, 100, 0.7);  
+            color: #fff;  
+            font-size: 28px;  
+            line-height: 50px;  
+            text-align: center;  
+            cursor: pointer;  
+            z-index: 101; /* 比容器更高 */ 
+            pointer-events: auto;  
+            border-bottom-left-radius: 16px;  
+            transition: background 0.2s;  
+            transform: none; /* 【关键】不需要再反向翻转了 */ 
+        }  
+         
+
+        #video-toggle:hover {  
+            background: rgba(255, 50, 120, 1);  
         } 
 
-        /* 折叠状态 */ 
-        #video-container.collapsed { 
-            width: 32px; height: 32px; 
-            border-radius: 50%; 
-            border-color: rgba(255, 255, 255, 0.3); 
-        } 
-        /* 折叠时隐藏视频内容 */ 
-        #video-container.collapsed video, 
-        #video-container.collapsed canvas { 
-            opacity: 0; 
-            pointer-events: none; 
-        } 
 
-        /* 切换按钮 (必须设置 pointer-events: auto 因为父容器是 none) */ 
-        #video-toggle { 
-            position: absolute; 
-            top: 0; right: 0; 
-            width: 30px; height: 30px; 
-            background: rgba(0, 0, 0, 0.6); 
-            color: #fff; 
-            font-size: 18px; 
-            line-height: 30px; 
-            text-align: center; 
-            cursor: pointer; 
-            z-index: 20; 
-            pointer-events: auto; /* 关键：允许点击 */ 
-            border-bottom-left-radius: 8px; 
-            transition: background 0.2s; 
-            /* 反向抵消父容器的镜像，确保文字不反 */ 
-            transform: scaleX(-1); 
-        } 
-        #video-toggle:hover { 
-            background: rgba(255, 50, 100, 0.8); 
+        /* 折叠时，按钮铺满圆圈 */
+        #video-container.collapsed #video-toggle {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background: transparent;
+            line-height: 46px; /* 微调垂直居中 */
         }
-        
-        #input_video, #debug_canvas { 
-            position: absolute; top:0; left:0; width: 100%; height: 100%; 
-            object-fit: cover; 
+          
+        /* 视频画面：在这里做镜像和比例修复 */  
+        #input_video, #debug_canvas {  
+            position: absolute; top:0; left:0; width: 100%; height: 100%;  
+            object-fit: cover; /* 【关键】保持原生比例填充，多余的切掉，绝不压扁 */ 
+            transform: scaleX(-1); /* 【关键】镜像翻转在这里做 */ 
+            background: #000;
         }
 
         #ui-container {
@@ -447,8 +466,8 @@
             try {
                 loadingText.innerText = "正在加载 AI 模型...";
                 await initMediaPipe();
-                document.getElementById('video-container').style.display = 'block';
-                document.getElementById('video-container').style.opacity = '0.6';
+                // 注意：这里不再直接显示 video-container，而是移到了 initMediaPipe 里的 onloadeddata 事件中
+                // 这样能确保画面有了再显示，避免黑屏
                 startGameLoop();
             } catch (error) {
                 console.error(error);
@@ -672,21 +691,22 @@
         } 
     }
     
-    // === 视频窗口折叠/展开功能 === 
-    function toggleVideo() { 
+    // === 视频窗口折叠/展开功能 (修复：挂载到 window 确保 HTML 能调用) === 
+    window.toggleVideo = function() { 
         const container = document.getElementById('video-container'); 
         const toggleBtn = document.getElementById('video-toggle'); 
         
-        if (container.classList.contains('collapsed')) { 
-            // 展开 
-            container.classList.remove('collapsed'); 
-            toggleBtn.innerText = '−'; 
-        } else { 
-            // 折叠 
-            container.classList.add('collapsed'); 
+        // 切换类名 
+        const isCollapsed = container.classList.toggle('collapsed'); 
+        
+        if (isCollapsed) { 
+            // 变成了折叠状态，显示加号 
             toggleBtn.innerText = '+'; 
+        } else { 
+            // 展开了，显示减号 
+            toggleBtn.innerText = '−'; 
         } 
-    } 
+    }; 
 
     function initUI() {
         if (isPaidUser) {
@@ -752,6 +772,21 @@
         const videoElement = document.getElementById('input_video');
         const debugCanvas = document.getElementById('debug_canvas');
         const debugCtx = debugCanvas.getContext('2d');
+        const container = document.getElementById('video-container'); // 获取容器
+
+        // === 【关键修改】监听视频数据加载，画面出来后再显示窗口 === 
+        videoElement.onloadeddata = () => {
+            debugCanvas.width = videoElement.videoWidth; 
+            debugCanvas.height = videoElement.videoHeight;
+            
+            // 画面准备好了，显示容器
+            container.style.display = 'block';
+            // 稍微延时一点点给透明度动画，确保平滑
+            requestAnimationFrame(() => {
+                container.style.opacity = '0.8';
+            });
+        };
+
         const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
         hands.setOptions({maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5});
         hands.onResults((results) => {
@@ -759,20 +794,16 @@
             debugCtx.save();
             debugCtx.clearRect(0, 0, debugCanvas.width, debugCanvas.height);
             debugCtx.drawImage(results.image, 0, 0, debugCanvas.width, debugCanvas.height);
-            
-            // === 【修改】注释掉下面这段绘制骨骼的代码 === 
-            // if (results.multiHandLandmarks) {
-            //     for (const landmarks of results.multiHandLandmarks) {
-            //         drawConnectors(debugCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 2}); 
-            //         drawLandmarks(debugCtx, landmarks, {color: '#FF0000', lineWidth: 1, radius: 2}); 
-            //     }
-            // }
-            // ========================================== 
-            
             debugCtx.restore();
         });
-        const cameraUtils = new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 640, height: 480, facingMode: 'user'});
-        videoElement.onloadedmetadata = () => { debugCanvas.width = videoElement.videoWidth; debugCanvas.height = videoElement.videoHeight; };
+          
+        const cameraUtils = new Camera(videoElement, { 
+            onFrame: async () => { await hands.send({image: videoElement}); }, 
+            width: 640, 
+            height: 480, 
+            facingMode: 'user'
+        });
+          
         await cameraUtils.start();
     }
 
