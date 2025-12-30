@@ -183,21 +183,30 @@
 
     // === 核心配置 ===
     let config = {
-        // 【修改点】默认只有一句话，没有倒计时
-        textList: ["2026 新年快乐"],
+        // 【修改点】混合模式：第一句走烟花填字，后面走星空粒子
+        textList: [
+            "2026新年快乐", // 索引0：烟花填字
+            "3", "2", "1", 
+            "2026", 
+            "新年快乐", 
+            "万事胜意", 
+            "所愿皆得"
+        ],
+        // 第一句的时长由填满逻辑决定，这里只配置后续的
+        textDuration: [null, 1500, 1500, 1500, 3000, 3000, 3000, 4000],
         
-        // --- 视觉与物理配置 ---
+        // --- 视觉与物理配置 (烟花模式) ---
         fontSizeMultiplier: 0.12, 
-        resolutionGap: 4,         // 间距4 (细腻)
-        particleSize: 1.8,        // 粒子1.8 (小巧)
-        secondaryChance: 0.3,     // 30%概率二次爆炸
+        resolutionGap: 5,         // 加大间距，减少像素点，加快填满速度
+        particleSize: 1.8,        
+        secondaryChance: 0.3,     
         gravity: 0.05,            
         friction: 0.96,           
-        trailAlpha: 0.12,         // 拖尾透明度
+        trailAlpha: 0.12,         
         
-        // --- 发射逻辑 ---
-        normalFireworkChance: 0.1, // 小烟花常放
-        bigFireworkChance: 0.05    // 大烟花受锁控制
+        // --- 发射逻辑 (烟花模式) ---
+        normalFireworkChance: 0.2, // 提高发射频率，加快填满速度
+        bigFireworkChance: 0.1     // 提高大烟花频率
     };
 
     // 全局状态
@@ -206,7 +215,7 @@
     let isRunning = false;
     let currentTextIndex = 0;
     
-    // 烟花相关全局变量
+    // === 模式 1：烟花相关变量 ===
     let fireworks = [];
     let particles = [];
     let textGrid = {}; 
@@ -217,9 +226,15 @@
     let bigFireworkCooldown = 0;
     let isSwitchingText = false; 
 
+    // === 模式 2：星空粒子相关变量 ===
+    const MAX_TEXT_PARTICLES = 15000; 
+    let textParticlePool = []; 
+    let currentEffect = 'converge';
+
     function goBuy() { window.location.href = BUY_LINK; }
 
     function moveGlow(e) {
+        // ... (保持不变)
         const btn = e.currentTarget;
         const rect = btn.getBoundingClientRect();
         let clientX = e.clientX;
@@ -233,6 +248,15 @@
         btn.style.setProperty('--x', x + 'px');
         btn.style.setProperty('--y', y + 'px');
     }
+
+    // ... (fetchDecryptedPayload 保持不变) ...
+    // 为了简化 replace，我保留 fetchDecryptedPayload 的大致逻辑，但注意这里需要小心上下文
+    // 由于 replace 工具限制，这里假设 fetchDecryptedPayload 没变，只修改它上面的变量和它下面的 initUI 之间的代码是不够的。
+    // 我将把整个 script 区域重写，除了 fetchDecryptedPayload 内部大段逻辑，或者分块替换。
+    // 鉴于这个文件不算太大，我尝试替换从 config 定义开始到 animate 结束的大块区域。
+
+    // ... (Wait, rewriting the whole script is safer to ensure variable scope is correct) ...
+
 
     // === 1. 获取解密数据 (带加载锁) === 
     async function fetchDecryptedPayload() { 
@@ -338,6 +362,126 @@
     let isMobile = false;
     let dpr = 1;
 
+    // === 辅助类：星空粒子 ===
+    class TextParticle {
+        constructor() {
+            this.active = false;
+            this.x = 0; this.y = 0;
+            this.targetX = 0; this.targetY = 0;
+            this.vx = 0; this.vy = 0;
+            this.angle = 0; this.radius = 0;
+            this.color = '';
+            this.size = 2.0;
+        }
+        activate(targetX, targetY, effectType, size = 2.0) {
+            this.active = true;
+            this.targetX = targetX;
+            this.targetY = targetY;
+            const mobileScale = isMobile ? 0.6 : 1.0; 
+            this.color = `rgba(220, 240, 255, ${0.7 + Math.random() * 0.3})`;
+            this.size = 2.0 * mobileScale;
+            
+            if (this.x === 0 && this.y === 0) {
+                 this.x = Math.random() * width;
+                 this.y = Math.random() * height;
+            }
+            switch (effectType) {
+                case 'explode': 
+                    const dx = this.x - width/2;
+                    const dy = this.y - height/2;
+                    this.vx = dx * 0.05 + (Math.random() - 0.5) * 10;
+                    this.vy = dy * 0.05 + (Math.random() - 0.5) * 10;
+                    break;
+                case 'spiral': 
+                    this.angle = Math.random() * Math.PI * 2;
+                    this.radius = 300 + Math.random() * 200; 
+                    this.x = targetX + Math.cos(this.angle) * this.radius;
+                    this.y = targetY + Math.sin(this.angle) * this.radius;
+                    break;
+                case 'converge': default: break;
+            }
+        }
+        update(effectType) {
+            if (!this.active) return;
+            switch (effectType) {
+                case 'explode':
+                    this.x += this.vx; this.y += this.vy;
+                    this.vx *= 0.9; this.vy *= 0.9;
+                    this.x += (this.targetX - this.x) * 0.08;
+                    this.y += (this.targetY - this.y) * 0.08;
+                    break;
+                case 'spiral':
+                    this.x += (this.targetX - this.x) * 0.08;
+                    this.y += (this.targetY - this.y) * 0.08;
+                    break;
+                case 'converge': default:
+                    this.x += (this.targetX - this.x) * 0.08;
+                    this.y += (this.targetY - this.y) * 0.08;
+                    break;
+            }
+        }
+        draw(ctx) {
+            if (!this.active) return;
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    function getTextCoordinates(text) {
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+        
+        let fontSize = Math.min(width, height) * 0.15;
+        if (isMobile) fontSize *= 1.2;
+        tempCtx.font = `bold ${fontSize}px "Microsoft YaHei", sans-serif`;
+        tempCtx.fillStyle = 'white';
+        tempCtx.textAlign = 'center';
+        tempCtx.textBaseline = 'middle';
+
+        const maxWidth = width * 0.85;
+        const lineHeight = fontSize * 1.2;
+        const words = text.split('');
+        let lines = [];
+        let currentLine = words[0];
+
+        for (let i = 1; i < words.length; i++) {
+            const char = words[i];
+            const testWidth = tempCtx.measureText(currentLine + char).width;
+            if (testWidth < maxWidth) {
+                currentLine += char;
+            } else {
+                lines.push(currentLine);
+                currentLine = char;
+            }
+        }
+        lines.push(currentLine);
+
+        const totalHeight = lines.length * lineHeight;
+        const startY = (height - totalHeight) / 2 + (lineHeight / 2);
+
+        lines.forEach((line, i) => {
+            tempCtx.fillText(line, width / 2, startY + i * lineHeight);
+        });
+        
+        const imageData = tempCtx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+        const coords = [];
+        const gap = isMobile ? 3 : 4;
+        
+        for (let y = 0; y < height; y += gap) {
+            for (let x = 0; x < width; x += gap) {
+                if (data[(y * width + x) * 4 + 3] > 180) {
+                    coords.push({ x: x, y: y });
+                }
+            }
+        }
+        return coords;
+    }
+
     // === 2. 初始化画布 ===
     function init() {
         const screenW = window.innerWidth;
@@ -371,8 +515,17 @@
         canvas.style.height = height + 'px';
         ctx.scale(dpr, dpr);
         
-        // 初始化当前文字
-        initTextGrid(config.textList[currentTextIndex]);
+        // 初始化当前文字 (如果是第一句，初始化 Grid)
+        if (currentTextIndex === 0) {
+            initTextGrid(config.textList[0]);
+        }
+
+        // 初始化星空粒子池
+        if (textParticlePool.length === 0) {
+            for (let i = 0; i < MAX_TEXT_PARTICLES; i++) {
+                textParticlePool.push(new TextParticle());
+            }
+        }
     }
 
     window.addEventListener('resize', () => {
@@ -523,8 +676,8 @@
                 return;
             }
 
-            // 盛水填充
-            if (!isTextFull && this.vy > 0) {
+            // 盛水填充 (仅在第一句模式下生效)
+            if (currentTextIndex === 0 && !isTextFull && this.vy > 0) {
                 const gap = config.resolutionGap;
                 const gridX = Math.floor(this.x / gap) * gap;
                 const gridY = Math.floor(this.y / gap) * gap;
@@ -625,6 +778,54 @@
         }
     }
 
+    function activateStarText(index) {
+        const text = config.textList[index];
+        const coords = getTextCoordinates(text);
+        
+        const effects = ['converge', 'spiral', 'explode'];
+        
+        if (index < 4 && /^\d+$/.test(text)) {
+             currentEffect = Math.random() > 0.5 ? 'explode' : 'converge';
+        } else {
+            currentEffect = effects[Math.floor(Math.random() * effects.length)];
+        }
+
+        textParticlePool.forEach(p => p.active = false);
+        for (let i = 0; i < coords.length && i < textParticlePool.length; i++) {
+            textParticlePool[i].activate(coords[i].x, coords[i].y, currentEffect);
+        }
+    }
+
+    function scheduleNextStarSwitch() {
+        if (currentTextIndex === 0) return; 
+        
+        let delay = config.textDuration[currentTextIndex] || 3000;
+        
+        setTimeout(() => {
+            currentTextIndex++;
+            
+            // === 循环逻辑 ===
+            if (currentTextIndex >= config.textList.length) {
+                 currentTextIndex = 4; // 回到 "2026" 开始循环 (跳过倒计时)
+                 if (currentTextIndex >= config.textList.length) currentTextIndex = 1;
+
+                 // 显示广告
+                 if (!hasShownAd && !isPaidUser) { 
+                    const ad = document.getElementById('end-ad'); 
+                    if(ad) { 
+                        ad.style.display = 'block'; 
+                        setTimeout(() => ad.classList.add('visible'), 100); 
+                    } 
+                    hasShownAd = true; 
+                } 
+            }
+            
+            activateStarText(currentTextIndex);
+            scheduleNextStarSwitch();
+            
+        }, delay);
+    }
+
     // === 5. 动画循环 ===
     function animate() {
         if(!isRunning) return;
@@ -635,60 +836,69 @@
         ctx.fillRect(0, 0, width, height);
         ctx.globalCompositeOperation = 'lighter';
 
-        // 发射
-        if (Math.random() < config.normalFireworkChance) fireworks.push(new Firework('normal'));
-        if (bigFireworkActive) {
-            if (Date.now() > bigFireworkCooldown) {
-                const bigParticlesLeft = particles.filter(p => p.type === 'big' && !p.isStuck).length;
-                if (bigParticlesLeft < 50) bigFireworkActive = false;
+        // === 全局背景烟花 ===
+        // 仅在“填字阶段(0)”或“倒计时结束后的祝福语阶段(>=4)”燃放烟花
+        // 倒计时阶段(1,2,3)暂停背景烟花，只显示数字
+        if (currentTextIndex === 0 || currentTextIndex >= 4) {
+            // 发射
+            if (Math.random() < config.normalFireworkChance) fireworks.push(new Firework('normal'));
+            if (bigFireworkActive) {
+                if (Date.now() > bigFireworkCooldown) {
+                    const bigParticlesLeft = particles.filter(p => p.type === 'big' && !p.isStuck).length;
+                    if (bigParticlesLeft < 50) bigFireworkActive = false;
+                }
+            } else if (Math.random() < config.bigFireworkChance) {
+                fireworks.push(new Firework('big'));
+                bigFireworkActive = true;
             }
-        } else if (Math.random() < config.bigFireworkChance) {
-            fireworks.push(new Firework('big'));
-            bigFireworkActive = true;
         }
 
-        // 更新实体
+        // 更新烟花火箭
         for (let i = fireworks.length - 1; i >= 0; i--) {
             fireworks[i].update();
             fireworks[i].draw();
             if (fireworks[i].dead) fireworks.splice(i, 1);
         }
 
+        // 更新烟花粒子
         for (let i = particles.length - 1; i >= 0; i--) {
             particles[i].update();
             particles[i].draw();
+            // 如果没粘住且透明度过低，移除
             if (!particles[i].isStuck && particles[i].alpha <= 0.01) {
                 particles.splice(i, 1);
             }
         }
 
-        // 切换文字逻辑 
-        if (isTextFull && !isSwitchingText) { 
-            isSwitchingText = true; 
-            // 默认停留 3秒 
-            setTimeout(() => { 
-                currentTextIndex++; 
+        // === 模式 1: 烟花填字逻辑 (仅 Index 0) ===
+        if (currentTextIndex === 0) {
+            // 切换检测
+            if (isTextFull && !isSwitchingText) { 
+                isSwitchingText = true; 
                 
-                // === 无限循环逻辑 === 
-                if (currentTextIndex >= config.textList.length) { 
-                    currentTextIndex = 0; // 归零，从头开始 
+                // 填满后停留 4秒，然后切入倒计时
+                setTimeout(() => { 
+                    currentTextIndex++; 
                     
-                    // (可选) 播放完一轮后显示底部广告，不打断循环 
-                    if (!hasShownAd && !isPaidUser) { 
-                        const ad = document.getElementById('end-ad'); 
-                        if(ad) { 
-                            ad.style.display = 'block'; 
-                            setTimeout(() => ad.classList.add('visible'), 100); 
-                        } 
-                        hasShownAd = true; 
-                    } 
-                } 
-                
-                // 初始化下一句文字 
-                initTextGrid(config.textList[currentTextIndex]); 
-                isSwitchingText = false; 
-                
-            }, 3000); 
+                    // 【关键】只清理粘在文字上的粒子，保留空中飞舞的烟花背景
+                    particles = particles.filter(p => !p.isStuck);
+                    
+                    // 启动星空粒子
+                    activateStarText(currentTextIndex);
+                    isSwitchingText = false; 
+                    
+                    // 开始星空循环
+                    scheduleNextStarSwitch();
+
+                }, 4000); 
+            }
+        } 
+        // === 模式 2: 星空粒子 (后续文字) ===
+        else {
+            textParticlePool.forEach(p => {
+                p.update(currentEffect);
+                p.draw(ctx);
+            });
         }
     }
 
